@@ -1,0 +1,71 @@
+# Alis Build — Antigravity tool policies for the `alis` CLI.
+#
+# Intent (ported from the Claude Code plugin's allow-alis-cli PreToolUse hook):
+# let the agent run plain `alis …` commands without a confirmation prompt on
+# every call, while ALWAYS routing explicit-approval flags to the human:
+#
+#   - `--confirm-production` is the production deploy gate. The alis CLI exits
+#     with code 3 on a production-targeting deploy until re-run with this flag,
+#     and the flag requires the user's explicit approval. It must NEVER be
+#     auto-approved by tooling — the whole point of the gate is that a human
+#     says yes.
+#   - `--approve` is the CLI's human pre-approval flag; auto-approving it would
+#     let the agent grant itself approvals.
+#   - `alis blocks uninstall … --yes` is destructive and prompt-skipping.
+#
+# For those three shapes the higher-priority `ask_user` rules below match first,
+# so the human always sees a prompt (deliberate double-keying: approved in chat
+# AND approved at the tool boundary).
+#
+# Defensive assumptions (commandRegex semantics are not fully documented for
+# Antigravity plugin policies; the shipped modern-web-guidance plugin uses a
+# bare substring, which suggests unanchored search):
+#   - The allow rule is anchored (^…$) and restricted to a conservative
+#     character class that excludes shell metacharacters (| & ; < > ` $ ( ) \\
+#     and single quotes), so `alis define && rm -rf /`-style chaining can never
+#     ride on the allow. A legitimately-quoted metacharacter simply falls
+#     through to Antigravity's normal confirmation flow — safe degradation.
+#   - The ask_user rules are deliberately UNanchored substring-style patterns,
+#     so they match no matter how the flag is embedded in the command line.
+#   - We assume a higher `priority` number wins; even if it does not, the
+#     Antigravity policy model resolves ask above allow at equal specificity
+#     (deny > ask_user > allow), so the production gate still reaches the human.
+#   - `modes` is omitted so the rules apply in every mode; if the field turns
+#     out to be required and the file fails to load, Antigravity falls back to
+#     its default confirmation behavior, which is safe.
+
+# --- Always ask the human -----------------------------------------------------
+
+# Production deploy gate: any command carrying --confirm-production.
+[[rule]]
+toolName = "run_shell_command"
+commandRegex = '--confirm-production'
+decision = "ask_user"
+priority = 100
+
+# The CLI's human pre-approval flag (also matches --approve=...).
+[[rule]]
+toolName = "run_shell_command"
+commandRegex = '--approve'
+decision = "ask_user"
+priority = 100
+
+# Destructive, prompt-skipping block removal: `alis blocks uninstall … --yes`
+# (either flag order, `block` or `blocks`).
+[[rule]]
+toolName = "run_shell_command"
+commandRegex = 'alis\s+blocks?\s.*uninstall.*--yes|alis\s+blocks?\s.*--yes.*uninstall'
+decision = "ask_user"
+priority = 100
+
+# --- Allow plain alis invocations --------------------------------------------
+
+# A single, simple `alis <subcommand> …` command: first token exactly `alis`,
+# remainder drawn from a conservative character class (letters, digits, space,
+# and common flag/argument punctuation including double quotes). No pipes,
+# chaining, redirection, backticks, subshells, backslashes, or newlines.
+[[rule]]
+toolName = "run_shell_command"
+commandRegex = '^alis($| [A-Za-z0-9 ._:/@=+,"-]*$)'
+decision = "allow"
+priority = 10

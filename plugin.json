@@ -1,0 +1,10 @@
+{
+  "name": "alis-build",
+  "version": "0.1.0",
+  "description": "Connect Google Antigravity to Alis Build through the alis CLI.",
+  "author": {
+    "name": "Alis Build"
+  },
+  "repository": "https://github.com/alis-build/antigravity-plugin",
+  "license": "MIT"
+}

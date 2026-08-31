@@ -1,0 +1,110 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 320" role="img" aria-labelledby="title desc">
+  <title id="title">Google Antigravity connected to Alis Build</title>
+  <desc id="desc">Google Antigravity connected to Alis Build.</desc>
+
+  <defs>
+    <filter id="node-shadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="10" stdDeviation="10" flood-color="#000000" flood-opacity="0.25"/>
+    </filter>
+    <linearGradient id="connection" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#207CFE"/>
+      <stop offset="0.5" stop-color="#B381DD"/>
+      <stop offset="1" stop-color="#52d6a3"/>
+    </linearGradient>
+    <linearGradient id="antigravity-gradient" x1="24" x2="0" y1="6.587" y2="16.494" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#EE4D5D"/>
+      <stop offset="0.328" stop-color="#B381DD"/>
+      <stop offset="0.476" stop-color="#207CFE"/>
+    </linearGradient>
+    <radialGradient id="center-fill" cx="50%" cy="48%" r="58%">
+      <stop offset="0" stop-color="#343434"/>
+      <stop offset="1" stop-color="#252525"/>
+    </radialGradient>
+    <filter id="alis-goo">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="2.6" result="blur"/>
+      <feColorMatrix in="blur" mode="matrix" values="
+        1 0 0 0 0
+        0 1 0 0 0
+        0 0 1 0 0
+        0 0 0 19 -8
+      " result="goo"/>
+      <feBlend in="SourceGraphic" in2="goo"/>
+    </filter>
+  </defs>
+
+  <rect width="960" height="320" rx="12" fill="#202020"/>
+
+  <path
+    d="M98 244 C250 198 344 256 480 222 C612 190 704 214 860 174"
+    fill="none"
+    stroke="#3a3a3a"
+    stroke-width="1.5"
+    opacity="0.28"
+  />
+  <path
+    d="M112 74 C260 128 344 88 480 104 C612 120 704 74 850 92"
+    fill="none"
+    stroke="#3a3a3a"
+    stroke-width="1.5"
+    opacity="0.24"
+  />
+
+  <path d="M310 154 C430 134 550 134 674 154" fill="none" stroke="url(#connection)" stroke-linecap="round" stroke-width="4" opacity="0.82"/>
+  <g fill="#52d6a3" opacity="0.95">
+    <circle cx="438" cy="140" r="4.5"/>
+    <circle cx="512" cy="140" r="4.5"/>
+    <circle cx="586" cy="144" r="4.5"/>
+  </g>
+
+  <g filter="url(#node-shadow)">
+    <g transform="translate(230 82)">
+      <circle cx="80" cy="72" r="66" fill="#2b2b2b" stroke="#474747" stroke-width="2"/>
+      <circle cx="80" cy="72" r="49" fill="#1f1f1f" stroke="#207CFE" stroke-opacity="0.72" stroke-width="1.5"/>
+      <g transform="translate(44 36) scale(3)">
+        <path d="M0 4.391A4.391 4.391 0 014.391 0h15.217A4.391 4.391 0 0124 4.391v15.217A4.391 4.391 0 0119.608 24H4.391A4.391 4.391 0 010 19.608V4.391z" fill="url(#antigravity-gradient)"/>
+        <path clip-rule="evenodd" d="M19.74 1.444a2.816 2.816 0 012.816 2.816v15.48a2.816 2.816 0 01-2.816 2.816H4.26a2.816 2.816 0 01-2.816-2.816V4.26A2.816 2.816 0 014.26 1.444h15.48zM7.236 8.564l7.752 3.728-7.752 3.727v2.802l9.557-4.596v-3.866L7.236 5.763v2.801z" fill="#1E1E2E" fill-rule="evenodd"/>
+      </g>
+      <text x="80" y="166" text-anchor="middle" fill="#d4d4d4" font-family="Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="20" font-weight="700">Antigravity</text>
+    </g>
+
+    <g transform="translate(594 82)">
+      <circle cx="80" cy="72" r="66" fill="url(#center-fill)" stroke="#5bb7ff" stroke-opacity="0.75" stroke-width="2.5"/>
+      <circle cx="80" cy="72" r="49" fill="#1f1f1f" stroke="#52d6a3" stroke-opacity="0.55" stroke-width="1.5"/>
+      <g transform="translate(45 37) scale(0.55)">
+        <style>
+          .alis-dot { fill: #f02222; opacity: 0.92; }
+          .alis-goo-dot { fill: #f02222; opacity: 0.94; }
+          .alis-traveler { fill: #f02222; }
+        </style>
+        <g filter="url(#alis-goo)">
+          <circle class="alis-goo-dot" cx="64.0006" cy="23.742" r="7.7339"/>
+          <circle class="alis-goo-dot" cx="84.1075" cy="23.742" r="7.7339"/>
+          <circle class="alis-goo-dot" cx="64.0006" cy="43.8713" r="7.7339"/>
+          <circle class="alis-goo-dot" cx="84.1075" cy="43.8713" r="7.7339"/>
+          <circle class="alis-goo-dot" cx="43.8939" cy="64" r="7.7339"/>
+          <circle class="alis-goo-dot" cx="64.0006" cy="64" r="7.7339"/>
+          <circle class="alis-goo-dot" cx="84.1075" cy="64" r="7.7339"/>
+          <circle class="alis-goo-dot" cx="43.8939" cy="84.1294" r="7.7339"/>
+          <circle class="alis-goo-dot" cx="64.0006" cy="84.1294" r="7.7339"/>
+          <circle class="alis-goo-dot" cx="43.8939" cy="104.258" r="7.7339"/>
+          <circle class="alis-goo-dot" cx="64.0006" cy="104.258" r="7.7339"/>
+          <circle class="alis-traveler" cx="64.0006" cy="64" r="8"/>
+        </g>
+        <g>
+          <circle class="alis-dot" cx="64.0006" cy="23.742" r="7.7339"/>
+          <circle class="alis-dot" cx="84.1075" cy="23.742" r="7.7339"/>
+          <circle class="alis-dot" cx="64.0006" cy="43.8713" r="7.7339"/>
+          <circle class="alis-dot" cx="84.1075" cy="43.8713" r="7.7339"/>
+          <circle class="alis-dot" cx="43.8939" cy="64" r="7.7339"/>
+          <circle class="alis-dot" cx="64.0006" cy="64" r="7.7339"/>
+          <circle class="alis-dot" cx="84.1075" cy="64" r="7.7339"/>
+          <circle class="alis-dot" cx="43.8939" cy="84.1294" r="7.7339"/>
+          <circle class="alis-dot" cx="64.0006" cy="84.1294" r="7.7339"/>
+          <circle class="alis-dot" cx="43.8939" cy="104.258" r="7.7339"/>
+          <circle class="alis-dot" cx="64.0006" cy="104.258" r="7.7339"/>
+        </g>
+      </g>
+      <text x="80" y="166" text-anchor="middle" fill="#f2f2f2" font-family="Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="20" font-weight="800">Alis Build</text>
+    </g>
+  </g>
+</svg>
