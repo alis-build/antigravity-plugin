@@ -49,6 +49,15 @@ doing the steps by hand": generalize the steps, not the session.
      trigger phrases. This text is both the harness trigger and the search-ranking
      surface — write it for both.
    - Optionally add `references/` files for a scrubbed worked example.
+   - **Code is not a reference.** If the practice needs a buildable foundation (a
+     template tree, a Dockerfile, Terraform, a server), do not put it under the skill for
+     agents to copy by hand. Ship it as a code block: `alis blocks create <block-id> <pkg>`
+     from the source service, with the skill in the service's `.skill/` folder — it is
+     published as the `block-<block-id>` skill on every version, and builders get it with
+     one `alis blocks install`. Say so to the user before distilling; `alis docs codeblocks`
+     has the recipe. A skill that must carry `templates/` should tell its agent to run
+     `alis skills apply <id> --into <folder>` (optionally with a `generator.yaml` declaring
+     inputs), never to copy files one by one.
 
 5. **Write the eval while ground truth is fresh.** Fill `evals/cases.yaml` with 1-2 cases
    whose prompt is a generalized version of the task actually just done.
