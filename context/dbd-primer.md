@@ -1,17 +1,3 @@
-# Alis Build — Gemini CLI Compatibility Context
-
-You are working with Alis Build through the `alis` CLI. Prefer the `alis` CLI before
-guessing — use it to inspect the active workspace, product, environment, build status,
-logs, deploys, and related service context (`alis context view --json`; `alis docs` is
-the operating manual). Do not trigger rebuilds or deploys unless the user asks. Keep
-responses concise and action-oriented.
-
-For Gemini CLI extension installs, the rest of this file is the standing Alis Build
-how-to guide — the DBD mental model, quiet skill discovery, and the execution contract.
-It is always loaded; keep it in mind every turn.
-
----
-
 # Alis Build — Define, Build, Deploy (DBD)
 
 The core workflow on the Alis Build platform is **Define, Build, Deploy (DBD)**. Most

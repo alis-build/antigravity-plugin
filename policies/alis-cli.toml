@@ -1,4 +1,5 @@
-# Alis Build — Antigravity tool policies for the `alis` CLI.
+# Alis Build — Gemini CLI compatibility policies for the `alis` CLI.
+# Native Antigravity uses hooks/allow-alis-cli.sh via the root hooks.json.
 #
 # Intent (ported from the Claude Code plugin's allow-alis-cli PreToolUse hook):
 # let the agent run plain `alis …` commands without a confirmation prompt on

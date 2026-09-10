@@ -2,7 +2,7 @@
 # Validate the Alis Build Antigravity plugin before release.
 #
 # Checks:
-#   1. plugin.json and gemini-extension.json are valid JSON (jq).
+#   1. Plugin manifests and native hooks.json are valid JSON (jq).
 #   2. Their versions match.
 #   3. Every shell script parses (bash -n).
 #   4. Every skills/*/SKILL.md has name + description frontmatter.
@@ -10,6 +10,7 @@
 #   6. No Google-MCP material anywhere (the canonical Claude plugin dropped
 #      it; it must not reappear here).
 #   7. policies/*.toml parse as TOML (soft check, needs python3 with tomllib).
+#   8. Native hook behavior and compatibility primer consistency (python3).
 set -euo pipefail
 
 root="$(cd "$(dirname "$0")/.." && pwd)"
@@ -20,7 +21,7 @@ ok() { echo "ok: $*"; }
 command -v jq >/dev/null 2>&1 || { echo "validate.sh requires jq" >&2; exit 1; }
 
 # 1. JSON validity.
-for f in plugin.json gemini-extension.json; do
+for f in plugin.json gemini-extension.json hooks.json; do
   if jq -e . "$root/$f" >/dev/null 2>&1; then
     ok "$f is valid JSON"
   else
@@ -92,6 +93,17 @@ if command -v python3 >/dev/null 2>&1 && python3 -c 'import tomllib' 2>/dev/null
   done < <(find "$root/policies" -name '*.toml' -print0 2>/dev/null)
 else
   echo "skip: python3 tomllib unavailable, TOML parse not checked"
+fi
+
+# 8. Run behavior checks with an isolated HOME and fake CLI.
+if command -v python3 >/dev/null 2>&1; then
+  if python3 "$root/tests/hooks-test.py"; then
+    ok "native hook regression tests"
+  else
+    err "native hook regression tests failed"
+  fi
+else
+  err "python3 is required for native hook regression tests"
 fi
 
 if [ "$fail" -ne 0 ]; then

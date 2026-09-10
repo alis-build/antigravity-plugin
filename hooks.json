@@ -1,0 +1,35 @@
+{
+  "alis-build-context": {
+    "PreInvocation": [
+      {
+        "type": "command",
+        "command": "bash ./hooks/load-primer.sh",
+        "timeout": 5
+      },
+      {
+        "type": "command",
+        "command": "bash ./hooks/inject-service-context.sh",
+        "timeout": 5
+      },
+      {
+        "type": "command",
+        "command": "bash ./hooks/sync-skills.sh",
+        "timeout": 5
+      }
+    ]
+  },
+  "alis-build-cli": {
+    "PreToolUse": [
+      {
+        "matcher": "run_command",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ./hooks/allow-alis-cli.sh",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  }
+}
