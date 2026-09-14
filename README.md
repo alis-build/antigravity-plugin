@@ -79,7 +79,7 @@ Discovery is skill-native: describe platform-shaped work in your own words and t
 
 ## Hooks and primer sync
 
-`context/dbd-primer.md` and `context/dbd-digest.md` are synced from the Claude Code plugin (`claude-plugin/plugins/alis-build/context/`, v0.21.3), with skill names adapted to `alis-build-discover` / `alis-build-capture`. Sync these files and the Gemini compatibility primer body together on each canonical primer release.
+`context/dbd-primer.md` and `context/dbd-digest.md` are synced from the Claude Code plugin (`claude-plugin/plugins/alis-build/context/`, v0.23.0), with skill names adapted to `alis-build-discover` / `alis-build-capture`. Sync these files and the Gemini compatibility primer body together on each canonical primer release.
 
 Antigravity uses a root-level `hooks.json` with named hooks, camelCase inputs and JSON outputs. Commands run relative to that file, so workspace detection uses `workspacePaths` from the payload. These contracts are described in the [Antigravity plugin guide](https://antigravity.google/docs/plugins/) and [hook reference](https://antigravity.google/docs/hooks).
 
@@ -107,3 +107,20 @@ This checks manifests, shell syntax, primer consistency and native hook behavior
 If the primer or skills do not take effect, confirm the plugin appears in Antigravity's Customizations page and restart it. For a manual global install, check `~/.gemini/config/plugins/alis-build/`. Confirm `jq` and `alis` are on the application's `PATH`, and that `ALIS_PRIMER` is not set to `off`.
 
 If `alis` commands fail with an auth error, run `alis login` (or `alis authorise <org>.<product>` for git/package credentials) and retry.
+
+## Workstation handoff and Claude parity
+
+Shared CLI guidance is synced with [Claude plugin v0.23.0](https://github.com/alis-build/claude-plugin/commit/2cb12b52d2d74c642f58ccd5bee58cd12b9dacfe):
+standalone commands, environment discovery without variable values, asynchronous
+operations, complete JSON results, logs/cancellation and pinned production approval.
+Native hook payloads and permission mechanisms remain specific to this agent.
+
+The `alis-build-handoff` skill handles "resume on my workstation", lists enrolled destinations, and explains
+how to inspect or cancel a known Claude handoff. **Automatic transfer currently supports
+Claude Code only; this plugin does not transfer Antigravity sessions.** Start a Claude transfer
+with `/alis-build:handoff` inside the source Claude session. For Antigravity work, the guide can
+prepare a continuation summary; files and live processes are not transferred by that summary.
+Keep the laptop awake until the CLI reports `safe_to_close: true`.
+
+Handoff requires the matching CLI and workstation runtime release, plus the Alis Claude
+plugin on both ends. Installing this plugin alone does not enable the transfer backend.
