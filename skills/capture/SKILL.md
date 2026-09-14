@@ -1,5 +1,5 @@
 ---
-name: alis-build-capture
+name: alis-capture
 description: >-
   Turn work just completed in this session into a reusable Alis Build skill for
   the user's team — like recording a macro after doing the steps by hand.

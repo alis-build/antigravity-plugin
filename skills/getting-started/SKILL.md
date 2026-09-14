@@ -1,5 +1,5 @@
 ---
-name: alis-build-getting-started
+name: alis-getting-started
 description: >-
   Start the guided Alis Build platform workflow and optional simpleapi
   quickstart. ACTIVATE this skill when the user is new to Alis Build and asks

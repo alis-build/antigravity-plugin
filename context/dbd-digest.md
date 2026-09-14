@@ -23,12 +23,12 @@ references an Ideate project (`ideas/<id>`), run `alis ideate context <id>` firs
 
 ## Skills are native
 
-The `alis-build-discover` skill routes platform-shaped work to registry skills — quietly and
+The `alis-discover` skill routes platform-shaped work to registry skills — quietly and
 local-first: probe `alis skills suggest "<outcome>" --json`; load only on a distinctive
 match (`distinctive` ≥ 3); no match means no skill and no narration. Generic coding
 (Makefiles, ordinary bugs, tests, git) needs no discovery even inside a workspace. A loaded
 skill owns execution. After solving something new by hand, the user can say "capture this
-as a skill" and `alis-build-capture` saves it for their team.
+as a skill" and `alis-capture` saves it for their team.
 
 Production changes require explicit approval of the exact version or pushed commit,
 target environments and branch override. Present the CLI's pinned retry for approval,

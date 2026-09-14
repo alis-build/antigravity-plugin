@@ -1,5 +1,5 @@
 {
-  "alis-build-context": {
+  "alis-context": {
     "PreInvocation": [
       {
         "type": "command",
@@ -18,7 +18,7 @@
       }
     ]
   },
-  "alis-build-cli": {
+  "alis-cli": {
     "PreToolUse": [
       {
         "matcher": "run_command",

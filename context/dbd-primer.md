@@ -44,12 +44,12 @@ Alis Build task, and walk the user through DBD rather than handing over a discon
 
 ## Skills — discovery is native and quiet
 
-The `alis-build-discover` skill owns skill routing for platform-shaped work — it is quiet,
+The `alis-discover` skill owns skill routing for platform-shaped work — it is quiet,
 local-first, and its own instructions carry the contract. Generic coding (Makefiles,
 ordinary bugs, tests, git operations, log reading) needs no discovery even inside a
 workspace, and direct DBD commands on a known target run the CLI directly — no skill. After
 solving something new by hand, the user can say "capture this as a skill" and
-`alis-build-capture` saves it for their team. Skills learn from feedback: `alis skills
+`alis-capture` saves it for their team. Skills learn from feedback: `alis skills
 feedback <id>` reaches the skill's owner, who runs `alis skills improve <id> --ticket <t>`
 to revise it from the conversation and the shared session (`alis docs skills`).
 

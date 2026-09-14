@@ -14,7 +14,7 @@ Use this plugin to let Google Antigravity work with Alis Build organisations, pr
 
 - A workspace-aware Define-Build-Deploy primer: the full guide on the first model invocation inside an `alis.build` workspace, a short refresher on later invocations, and just the refresher outside a workspace when `alis` is installed. No workspace and no CLI means no primer. Override with `ALIS_PRIMER=full|digest|off`.
 - Package ids and pointers between a service's protobuf definitions and implementation, including when a mounted workspace is inside `infra/` or `.playground/`; multiple mounted workspaces are supported.
-- Quiet, local-first discovery and capture skills: `alis-build-discover` activates on platform-shaped work (never on generic coding just because you are inside a workspace), probes the local catalog in ~40ms, and loads a registry skill only on a distinctive match; `alis-build-capture` turns just-completed work into a reusable team skill; `alis-build-getting-started` walks newcomers through their first Define-Build-Deploy cycle
+- Quiet, local-first discovery and capture skills: `alis-discover` activates on platform-shaped work (never on generic coding just because you are inside a workspace), probes the local catalog in ~40ms, and loads a registry skill only on a distinctive match; `alis-capture` turns just-completed work into a reusable team skill; `alis-getting-started` walks newcomers through their first Define-Build-Deploy cycle
 - A quiet background catalog refresh on the first invocation, explicitly using `alis skills sync --cache-only --harness antigravity` for compatibility with older CLIs. The plugin never installs native user skills; the CLI may clean up retired sync-managed entries.
 - A native tool hook that lets plain `alis …` commands run without a confirmation prompt on every call, while `--confirm-production` (the production deploy gate), `--approve`, and `alis blocks uninstall … --yes` always reach you for confirmation.
 
@@ -40,7 +40,7 @@ Or copy manually:
 ```sh
 git clone https://github.com/alis-build/antigravity-plugin
 mkdir -p ~/.gemini/config/plugins
-cp -R antigravity-plugin ~/.gemini/config/plugins/alis-build
+cp -R antigravity-plugin ~/.gemini/config/plugins/alis
 ```
 
 Restart Antigravity after installing.
@@ -75,11 +75,11 @@ The plugin's `PreToolUse` hook auto-approves single, simple `alis ...` commands.
 
 ## Skills
 
-Discovery is skill-native: describe platform-shaped work in your own words and the `alis-build-discover` skill routes it — local catalog probe first, registry skill loaded only on a distinctive match, silence otherwise. Say "capture this as a skill" after solving something new and `alis-build-capture` saves it for your team.
+Discovery is skill-native: describe platform-shaped work in your own words and the `alis-discover` skill routes it — local catalog probe first, registry skill loaded only on a distinctive match, silence otherwise. Say "capture this as a skill" after solving something new and `alis-capture` saves it for your team.
 
 ## Hooks and primer sync
 
-`context/dbd-primer.md` and `context/dbd-digest.md` are synced from the Claude Code plugin (`claude-plugin/plugins/alis-build/context/`, v0.23.0), with skill names adapted to `alis-build-discover` / `alis-build-capture`. Sync these files and the Gemini compatibility primer body together on each canonical primer release.
+`context/dbd-primer.md` and `context/dbd-digest.md` are synced from the Claude Code plugin (`claude-plugin/plugins/alis-build/context/`, v0.23.0), with skill names adapted to `alis-discover` / `alis-capture`. Sync these files and the Gemini compatibility primer body together on each canonical primer release.
 
 Antigravity uses a root-level `hooks.json` with named hooks, camelCase inputs and JSON outputs. Commands run relative to that file, so workspace detection uses `workspacePaths` from the payload. These contracts are described in the [Antigravity plugin guide](https://antigravity.google/docs/plugins/) and [hook reference](https://antigravity.google/docs/hooks).
 
@@ -104,7 +104,7 @@ This checks manifests, shell syntax, primer consistency and native hook behavior
 
 ## Troubleshooting
 
-If the primer or skills do not take effect, confirm the plugin appears in Antigravity's Customizations page and restart it. For a manual global install, check `~/.gemini/config/plugins/alis-build/`. Confirm `jq` and `alis` are on the application's `PATH`, and that `ALIS_PRIMER` is not set to `off`.
+If the primer or skills do not take effect, confirm the plugin appears in Antigravity's Customizations page and restart it. For a manual global install, check `~/.gemini/config/plugins/alis/`. Confirm `jq` and `alis` are on the application's `PATH`, and that `ALIS_PRIMER` is not set to `off`.
 
 If `alis` commands fail with an auth error, run `alis login` (or `alis authorise <org>.<product>` for git/package credentials) and retry.
 
@@ -115,10 +115,10 @@ standalone commands, environment discovery without variable values, asynchronous
 operations, complete JSON results, logs/cancellation and pinned production approval.
 Native hook payloads and permission mechanisms remain specific to this agent.
 
-The `alis-build-handoff` skill handles "resume on my workstation", lists enrolled destinations, and explains
+The `alis-handoff` skill handles "resume on my workstation", lists enrolled destinations, and explains
 how to inspect or cancel a known Claude handoff. **Automatic transfer currently supports
 Claude Code only; this plugin does not transfer Antigravity sessions.** Start a Claude transfer
-with `/alis-build:handoff` inside the source Claude session. For Antigravity work, the guide can
+with `/alis:handoff` inside the source Claude session. For Antigravity work, the guide can
 prepare a continuation summary; files and live processes are not transferred by that summary.
 Keep the laptop awake until the CLI reports `safe_to_close: true`.
 

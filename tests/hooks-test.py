@@ -234,13 +234,13 @@ class HooksTest(unittest.TestCase):
     def test_manifest_handlers_execute_from_plugin_root(self):
         config = json.loads(ROOT.joinpath("hooks.json").read_text())
         payload = {"invocationNum": 1, "workspacePaths": [str(self.workspace)]}
-        for handler in config["alis-build-context"]["PreInvocation"]:
+        for handler in config["alis-context"]["PreInvocation"]:
             result = subprocess.run(handler["command"], shell=True, cwd=ROOT,
                                     input=json.dumps(payload), text=True, capture_output=True,
                                     env=self.env, timeout=handler["timeout"])
             self.assertEqual(result.returncode, 0, result.stderr)
             json.loads(result.stdout)
-        group = config["alis-build-cli"]["PreToolUse"][0]
+        group = config["alis-cli"]["PreToolUse"][0]
         self.assertEqual(group["matcher"], "run_command")
         self.assertTrue(ROOT.joinpath(group["hooks"][0]["command"].split()[-1]).is_file())
 

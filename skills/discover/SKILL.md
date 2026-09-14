@@ -1,5 +1,5 @@
 ---
-name: alis-build-discover
+name: alis-discover
 description: >-
   Find and load the right Alis Build skill from the registry. ACTIVATE this
   skill when the task is platform-shaped: creating or changing a product,
