@@ -102,6 +102,18 @@ bash tests/validate.sh
 
 This checks manifests, shell syntax, primer consistency and native hook behavior with a fake CLI, including workspace gating, service paths, detached catalog refresh and permission boundaries. Tests do not contact Alis Build or modify installed skills.
 
+## Ticket reading and package setup
+
+Read referenced support tickets before proposing changes: use
+`alis specialist get tickets/ID --json`, or find the title with
+`alis specialist tickets --state all --json`. Use `alis packages install`
+for private package setup during Build. Read command results and help in full.
+
+If this guidance is absent after updating, confirm the Alis plugin is enabled
+and restart the agent. The CLI alone does not activate the agent plugin.
+For immediate guidance, read `alis docs specialist` and
+`alis packages install --help`.
+
 ## Troubleshooting
 
 If the primer or skills do not take effect, confirm the plugin appears in Antigravity's Customizations page and restart it. For a manual global install, check `~/.gemini/config/plugins/alis/`. Confirm `jq` and `alis` are on the application's `PATH`, and that `ALIS_PRIMER` is not set to `off`.
