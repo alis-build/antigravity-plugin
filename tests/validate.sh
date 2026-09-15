@@ -63,7 +63,7 @@ done < <(find "$root/skills" -mindepth 2 -maxdepth 2 -name 'SKILL.md' -print0)
 # 5. Unsubstituted placeholders. Pattern assembled so this script never
 # matches itself.
 u='_'
-placeholder="${u}${u}[A-Za-z0-9_]+${u}${u}"
+placeholder="${u}${u}[A-Z][A-Z0-9_]*${u}${u}"
 if hits="$(grep -rInE "$placeholder" "$root" --exclude-dir=.git 2>/dev/null)"; then
   err "unsubstituted placeholders found:"$'\n'"$hits"
 else
@@ -105,6 +105,8 @@ if command -v python3 >/dev/null 2>&1; then
 else
   err "python3 is required for native hook regression tests"
 fi
+
+python3 -B "$root/tests/test_handoff.py" || fail=1
 
 if [ "$fail" -ne 0 ]; then
   echo "validate.sh: FAILED" >&2

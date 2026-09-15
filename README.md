@@ -115,12 +115,18 @@ standalone commands, environment discovery without variable values, asynchronous
 operations, complete JSON results, logs/cancellation and pinned production approval.
 Native hook payloads and permission mechanisms remain specific to this agent.
 
-The `alis-handoff` skill handles "resume on my workstation", lists enrolled destinations, and explains
-how to inspect or cancel a known Claude handoff. **Automatic transfer currently supports
-Claude Code only; this plugin does not transfer Antigravity sessions.** Start a Claude transfer
-with `/alis:handoff` inside the source Claude session. For Antigravity work, the guide can
-prepare a continuation summary; files and live processes are not transferred by that summary.
-Keep the laptop awake until the CLI reports `safe_to_close: true`.
+Handoff opens the continuation in herdr, grouped by dotted dimensions: space
+`alis.os`, tab `cli.v1`, with a separate pane and paired build/Define worktrees
+for each session. The independent progress window must report `safe_to_close`
+before the laptop closes; a terminal being open is not agent acceptance.
 
-Handoff requires the matching CLI and workstation runtime release, plus the Alis Claude
-plugin on both ends. Installing this plugin alone does not enable the transfer backend.
+Antigravity uses an explicitly chosen summary fallback in this release. It starts
+a new session with continuation context; native cross-machine resume is not
+advertised. Hooks register the CLI session, enforce the source claim, and
+acknowledge the destination. Unknown background inventory blocks transfer.
+
+Requires the matching CLI, workstation runtime and agent integration on both
+machines, enrolled SSH and independent destination authentication. Use
+`alis workstation handoff status <id> --watch --json`, `open <id>`, or `cancel <id>`.
+Preserve exact Alis operation IDs and continue monitoring them rather than
+restarting a Define, Build or Deploy. Original local files and history remain.

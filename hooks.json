@@ -31,5 +31,52 @@
         ]
       }
     ]
+  },
+  "alis-handoff": {
+    "PreInvocation": [
+      {
+        "type": "command",
+        "command": "python3 \"./hooks/handoff.py\" antigravity PreInvocation",
+        "timeout": 10
+      }
+    ],
+    "PostInvocation": [
+      {
+        "type": "command",
+        "command": "python3 \"./hooks/handoff.py\" antigravity PostInvocation",
+        "timeout": 10
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": ".*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"./hooks/handoff.py\" antigravity PreToolUse",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": ".*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"./hooks/handoff.py\" antigravity PostToolUse",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "type": "command",
+        "command": "python3 \"./hooks/handoff.py\" antigravity Stop",
+        "timeout": 10
+      }
+    ]
   }
 }
