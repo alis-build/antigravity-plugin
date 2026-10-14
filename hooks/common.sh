@@ -2,7 +2,7 @@
 # Sourced by native Antigravity hooks. Hook cwd is the plugin root, not the
 # user's workspace; use workspacePaths from stdin for all workspace context.
 
-noop() { printf '{}\n'; exit 0; }
+noop() { exit 0; }
 command -v jq >/dev/null 2>&1 || noop
 payload="$(cat 2>/dev/null)" || noop
 printf '%s' "$payload" | jq -e 'type == "object"' >/dev/null 2>&1 || noop

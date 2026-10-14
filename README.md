@@ -24,7 +24,7 @@ You need:
 
 - Google Antigravity installed (from [antigravity.google](https://antigravity.google))
 - The [`alis` CLI](https://alis.build) installed, on your `PATH`, and signed in (`alis login`)
-- Bash and `jq` on Antigravity's `PATH` (hooks return an empty JSON object if `jq` is missing)
+- Bash and `jq` on Antigravity's `PATH` (hooks exit quietly as a no-op if `jq` is missing)
 - An Alis Build account with access to the organisations and products you want to use
 
 ## Install

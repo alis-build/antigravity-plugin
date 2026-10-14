@@ -50,7 +50,11 @@ class HooksTest(unittest.TestCase):
         )
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(result.stderr, "")
-        return json.loads(result.stdout)
+        if not result.stdout:
+            return {}
+        parsed = json.loads(result.stdout)
+        self.assertTrue(parsed, "no-op hooks must emit empty stdout, not {}")
+        return parsed
 
     def context(self, script="load-primer.sh", **kwargs):
         result = self.invoke(script, **kwargs)
@@ -239,7 +243,8 @@ class HooksTest(unittest.TestCase):
                                     input=json.dumps(payload), text=True, capture_output=True,
                                     env=self.env, timeout=handler["timeout"])
             self.assertEqual(result.returncode, 0, result.stderr)
-            json.loads(result.stdout)
+            if result.stdout:
+                self.assertTrue(json.loads(result.stdout))
         group = config["alis-cli"]["PreToolUse"][0]
         self.assertEqual(group["matcher"], "run_command")
         self.assertTrue(ROOT.joinpath(group["hooks"][0]["command"].split()[-1]).is_file())
