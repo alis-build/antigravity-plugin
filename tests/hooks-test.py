@@ -155,6 +155,9 @@ class HooksTest(unittest.TestCase):
         for command in (
             "alis", "alis docs", "  alis build acme.os.demo.v1 --json --deploy -e dev",
             'alis skills suggest "Pub/Sub event handler" --json', "alis ask 'show builds'",
+            'alis ask "why did the build fail (exit 1)?"',
+            'alis logs runtime acme.os.demo.v1 -e dev --severity ERROR --contains "panic: [nil]" --json',
+            'alis rpc invoke acme.os.demo.v1.Service/Get -d \'{"id": "123", "tags": ["a", "b"]}\' --json',
         ):
             with self.subTest(command=command):
                 self.assertEqual(self.approval(command)["decision"], "allow")
@@ -177,6 +180,7 @@ class HooksTest(unittest.TestCase):
         for command in (
             "alis deploy --confirm-production", "alis build --approve=true",
             "alis blocks uninstall demo --yes", "alis block --yes uninstall demo",
+            "alis --cwd /tmp/x blocks uninstall demo --yes",
             "alis docs && alis deploy --confirm-production",
             "alis deploy --confirm-production > /tmp/log",
         ):
@@ -186,7 +190,10 @@ class HooksTest(unittest.TestCase):
     def test_optional_subcommand_allowlist(self):
         env = {"ALIS_ALLOWED_SUBCMDS": "define build deploy operations"}
         self.assertEqual(self.approval("alis build --json", env=env)["decision"], "allow")
+        self.assertEqual(self.approval("alis --cwd /tmp/work build --json", env=env)["decision"], "allow")
+        self.assertEqual(self.approval("alis --cwd=/tmp/work --json operations wait op/1", env=env)["decision"], "allow")
         self.assertEqual(self.approval("alis docs", env=env), {})
+        self.assertEqual(self.approval("alis --cwd /tmp/work docs", env=env), {})
         self.assertEqual(self.approval("alis", env=env), {})
         self.assertEqual(self.approval("alis deploy --confirm-production", env=env)["decision"], "force_ask")
 
@@ -194,6 +201,27 @@ class HooksTest(unittest.TestCase):
         self.assertEqual(self.invoke("allow-alis-cli.sh", payload={"toolCall": {
             "name": "view_file", "args": {"CommandLine": "alis docs"},
         }}), {})
+        self.assertEqual(self.invoke("allow-alis-cli.sh", payload={
+            "workspacePaths": [str(self.workspace)],
+            "toolCall": {
+                "name": "view_file",
+                "args": {"AbsolutePath": str(self.definitions / "demo.proto")},
+            },
+        })["decision"], "allow")
+        self.assertEqual(self.invoke("allow-alis-cli.sh", payload={
+            "workspacePaths": [str(self.workspace)],
+            "toolCall": {
+                "name": "view_file",
+                "args": {"AbsolutePath": str(self.base / "alis.build/other/define/x.proto")},
+            },
+        }), {})
+        self.assertEqual(self.invoke("allow-alis-cli.sh", payload={
+            "workspacePaths": [str(self.workspace)],
+            "toolCall": {
+                "name": "view_file",
+                "args": {"AbsolutePath": str(self.definitions / "../../secret")},
+            },
+        }), {})
 
     def test_sync_is_detached_and_catalog_only(self):
         # The fake CLI blocks on a FIFO after recording its call. The parent

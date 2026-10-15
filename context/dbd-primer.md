@@ -121,7 +121,8 @@ directory.
   carries (`alis specialist send-message --attach-session …`) instead of retrying: the
   session is what the platform team needs.
 - **Logs and cancellation.** With a matching CLI/backend release, use `alis logs
-  build|deploy <op> --json`, `alis logs runtime <pkg> -e <env> --json`, and
+  build|deploy <op> --json`, `alis logs runtime [<pkg>] -e <env> [--since 1h] [--severity ERROR] [--contains <text>] --json`
+  (do not shell out to `gcloud logging read` or pipe through `grep`/`jq`), and
   `alis operations cancel <op> --json` (build only). Confirm `stopped: true` before
   replacement work. `BACKEND_OUTDATED` requires the matching backend update.
 - **Classify failures.** Legacy private-import DNS failures need package migration;

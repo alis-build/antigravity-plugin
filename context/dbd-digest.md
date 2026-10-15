@@ -59,7 +59,9 @@ Start long DBD work with `--async`; retain `name` and run `next`. Start/wait/des
 use common top-level fields (`schemaVersion: 1`, `done`, `status`, `version`); legacy
 start `metadata` is different from typed wait output. Read full JSON and errors.
 Local agent background-task IDs are separate from Alis operation names; stopping a local
-wait never cancels server work. Use logs and build cancellation with a matching
-CLI/backend release. Diagnose auth, package DNS and platform failures separately.
+wait never cancels server work. Use `alis logs build|deploy <op> --json`,
+`alis logs runtime [<pkg>] -e <env> [--since 1h] [--severity ERROR] [--contains <text>] --json`
+(never `gcloud logging read` or shell pipes), and `alis operations cancel <op> --json`
+with a matching CLI/backend release. Diagnose auth, package DNS and platform failures separately.
 Direct DBD commands on a known target need no skill discovery. After a plugin update,
 restart the agent; `alis doctor --json` reports cache and recent hook observations.

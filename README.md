@@ -71,7 +71,7 @@ Review the latest deploy logs for this neuron and suggest the next action.
 
 Antigravity will ask before running tools that require approval.
 
-The plugin's `PreToolUse` hook auto-approves single, simple `alis ...` commands. Commands with shell expansion, chaining or redirection fall through to Antigravity's normal confirmation flow. Commands carrying `--confirm-production` or `--approve`, and `alis blocks uninstall … --yes`, return `force_ask`, which prompts even when permissions were previously cached. To restrict auto-approval, set `ALIS_ALLOWED_SUBCMDS` to a space-separated list (e.g. `ALIS_ALLOWED_SUBCMDS="define build deploy operations"`); unset means every subcommand.
+The plugin's `PreToolUse` hook auto-approves single, simple `alis ...` commands (including balanced single/double-quoted JSON or query arguments and leading global flags like `--cwd`), as well as same-org `build`/`define` file and search tools. Commands with shell expansion, chaining or redirection fall through to Antigravity's normal confirmation flow. Commands carrying `--confirm-production` or `--approve`, and `alis blocks uninstall … --yes`, return `force_ask`, which prompts even when permissions were previously cached. To restrict auto-approval, set `ALIS_ALLOWED_SUBCMDS` to a space-separated list (e.g. `ALIS_ALLOWED_SUBCMDS="define build deploy operations"`); unset means every subcommand.
 
 ## Skills
 
@@ -88,7 +88,7 @@ Antigravity uses a root-level `hooks.json` with named hooks, camelCase inputs an
 | `SessionStart` primer and service context | `PreInvocation` returns `injectSteps` with transient `ephemeralMessage` context. Invocation 0 gets the full workspace primer; later invocations get the digest. |
 | Startup catalog refresh | First invocation launches `sync --cache-only --harness antigravity` with all streams detached. Unsupported flags fail quietly, with no fallback to a broader sync. |
 | `UserPromptSubmit` skill suggestions | Native discovery/capture skills handle routing. The documented Antigravity payload has no submitted prompt, so the plugin does not parse private transcript formats or register an unsupported event. |
-| `PreToolUse` on `Bash` | `PreToolUse` on `run_command` reads `toolCall.args.CommandLine` and returns `allow` or `force_ask`. |
+| `PreToolUse` on `Bash` | `PreToolUse` on `run_command` and file/search tools reads `toolCall.args` and returns `allow` or `force_ask`. |
 
 Antigravity exposes invocation counters rather than Claude's startup/resume/compact source field. The primer follows those counters and refreshes transient context on every invocation. `ALIS_PRIMER=off` disables the DBD primer; service pointers and catalog refresh remain independent, as in the Claude plugin. No Claude permission-mode record is written: Antigravity does not supply that grant signal.
 

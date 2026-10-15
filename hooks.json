@@ -29,6 +29,16 @@
             "timeout": 5
           }
         ]
+      },
+      {
+        "matcher": "view_file|list_dir|grep_search|find_by_name|replace_file_content|write_to_file",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ./hooks/allow-alis-cli.sh",
+            "timeout": 5
+          }
+        ]
       }
     ]
   },
