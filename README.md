@@ -77,6 +77,8 @@ The plugin's `PreToolUse` hook auto-approves single, simple `alis ...` commands 
 
 Discovery is skill-native: describe platform-shaped work in your own words and the `alis-discover` skill routes it — local catalog probe first, registry skill loaded only on a distinctive match, silence otherwise. Say "capture this as a skill" after solving something new and `alis-capture` saves it for your team.
 
+The `frontend-preview` skill shows a service's web frontend in the browser the agent's own tools drive and checks it there: `alis preview --json` for the address, then Antigravity's browser in the IDE, `agent-browser` on a workstation (attached to the shell's shared Chrome), or a Playwright MCP to inspect, click and read the console. The CLI installs and launches nothing. Never used for logs or operation status.
+
 ## Hooks and primer sync
 
 `context/dbd-primer.md` and `context/dbd-digest.md` are synced from the Claude Code plugin (`claude-plugin/plugins/alis-build/context/`, v0.23.0), with skill names adapted to `alis-discover` / `alis-capture`. Sync these files and the Gemini compatibility primer body together on each canonical primer release.
