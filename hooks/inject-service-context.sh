@@ -40,7 +40,7 @@ service_context() {
   fi
 
   printf 'Alis Build workspace: %s\n' "$dir"
-  [ -z "$pkg" ] || printf '  Package id: %s\n' "$pkg"
+  [ -z "$pkg" ] || printf '  Package ID: %s\n' "$pkg"
   if [ "$side" = build ]; then
     printf '  Service implementation (DBD Build).\n'
     if [ -d "$definedir" ]; then

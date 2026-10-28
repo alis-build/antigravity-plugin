@@ -112,7 +112,7 @@ class HooksTest(unittest.TestCase):
                 text = self.context("inject-service-context.sh", payload={
                     "workspacePaths": [str(path)],
                 })
-                self.assertIn("Package id: acme.os.demo.v1", text)
+                self.assertIn("Package ID: acme.os.demo.v1", text)
                 self.assertIn("Proto file: demo.proto", text)
                 counterpart = self.workspace if path.is_relative_to(self.definitions) else self.definitions
                 self.assertIn(str(counterpart), text)
@@ -121,7 +121,7 @@ class HooksTest(unittest.TestCase):
         text = self.context("inject-service-context.sh", payload={"workspacePaths": [
             str(self.plain), str(self.workspace), str(self.workspace), str(self.definitions),
         ]})
-        self.assertEqual(text.count("Package id: acme.os.demo.v1"), 2)
+        self.assertEqual(text.count("Package ID: acme.os.demo.v1"), 2)
 
     def test_service_roots_vendored_and_non_workspaces(self):
         for path in (
@@ -137,7 +137,7 @@ class HooksTest(unittest.TestCase):
             "workspacePaths": [str(self.base / "alis.build/acme/build/os")],
         })
         self.assertIn("Protobuf definitions", text)
-        self.assertNotIn("Package id:", text)
+        self.assertNotIn("Package ID:", text)
 
     def test_missing_counterparts(self):
         shutil.rmtree(self.definitions)

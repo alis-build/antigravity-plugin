@@ -21,7 +21,7 @@ if [ "$tool" != "run_command" ]; then
           end
       ' <<<"$payload" 2>/dev/null) || noop
       [ "$ok" = "yes" ] || noop
-      jq -n '{decision: "allow", reason: "Auto-approved same-org Alis workspace file access (Alis Build plugin)."}'
+      jq -n '{decision: "allow", reason: "Auto-approved workspace file access within the same build environment (Alis Build plugin)."}'
       exit 0
       ;;
     *)

@@ -9,7 +9,7 @@ IDE and desktop app sessions need a verified CLI registration.
 
 1. Use the current session ID from hook context (or the agent's session environment).
    Run `alis workstation handoff targets --json`; select the only enrolled target
-   in this organisation, or ask which target if several qualify.
+   in this build environment, or ask which target if several qualify.
 2. Native cross-machine resume for antigravity is not enabled in this release. Tell
    the user the fallback starts a **new session with continuation context** and
    obtain their choice before proceeding. Never silently downgrade to a summary.

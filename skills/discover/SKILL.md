@@ -3,15 +3,15 @@ name: alis-discover
 description: >-
   Find and load the right Alis Build skill from the registry. ACTIVATE this
   skill when the task is platform-shaped: creating or changing a product,
-  neuron, block, or landing zone; editing .proto contracts or running Define;
+  service, code block, or build environment; editing .proto contracts or running Define;
   Spanner schemas or protobundles; Pub/Sub event handlers; Terraform under a
-  neuron's infra/; generated packages failing to resolve; playground tests;
+  service's infra/; generated packages failing to resolve; playground tests;
   migrating legacy proto imports; ADK agents. Also on explicit asks: "find a
   skill for …", "is there a skill for …", "alis, …", "hey alis". Do NOT
   activate for: merely being inside an alis.build workspace, Makefiles and
   local dev tooling, generic Go/JS bugs or test authoring, git operations,
   reading logs, or when a loaded Alis skill already covers the task. Probes
-  the local catalog first (instant), loads the chosen skill, which then owns
+  the local catalogue first (instant), loads the chosen skill, which then owns
   execution.
 ---
 

@@ -15,7 +15,7 @@ description: >-
 # Capture — save just-completed work as a team skill
 
 Turn what was just done in this session into a reusable skill. Think "record a macro after
-doing the steps by hand": generalize the steps, not the session.
+doing the steps by hand": generalise the steps, not the session.
 
 ## Flow
 
@@ -43,10 +43,10 @@ doing the steps by hand": generalize the steps, not the session.
 4. **Distill into the workspace.** Write/Edit files at the returned path:
    - Generalized, reusable steps with decision points and verification steps — NOT a
      session log.
-   - Parameterize specifics: `<project-id>`, `<service>`, `<org>`.
-   - Scrub: absolute/home paths, emails, org/project ids, tokens/keys, internal URLs.
+   - Parameterise specifics: `<project-id>`, `<service>`, `<org>`.
+   - Scrub: absolute/home paths, emails, build environment/project IDs, tokens/keys, internal URLs.
    - Description rubric: first clause says what the skill does; then "Use when …" with
-     trigger phrases. This text is both the harness trigger and the search-ranking
+     trigger phrases. This text is both the coding agent trigger and the search-ranking
      surface — write it for both.
    - Optionally add `references/` files for a scrubbed worked example.
    - **Code is not a reference.** If the practice needs a buildable foundation (a
@@ -60,7 +60,7 @@ doing the steps by hand": generalize the steps, not the session.
      inputs), never to copy files one by one.
 
 5. **Write the eval while ground truth is fresh.** Fill `evals/cases.yaml` with 1-2 cases
-   whose prompt is a generalized version of the task actually just done.
+   whose prompt is a generalised version of the task actually just done.
 
 6. **Review in-session.** Show the user the frontmatter description and the step headings
    (not the whole file); iterate on their comments. Mention that the workspace persists at
