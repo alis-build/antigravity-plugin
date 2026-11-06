@@ -27,7 +27,7 @@ You need:
 
 - Google Antigravity installed (from [antigravity.google](https://antigravity.google))
 - The [`alis` CLI](https://alis.build) installed, on your `PATH`, and signed in (`alis login`)
-- Bash and `jq` on Antigravity's `PATH` (hooks exit quietly as a no-op if `jq` is missing)
+- Bash and `jq` on Antigravity's `PATH` (context and permission hooks skip quietly if `jq` is missing; an existing handoff claim still pauses local work)
 - An Alis Build account with access to the build environments and products you want to use
 
 ## Install
@@ -120,6 +120,17 @@ For immediate guidance, read `alis docs specialist` and
 `alis packages install --help`.
 
 ## Troubleshooting
+
+On Windows, a Microsoft Store `python3` shortcut can exist even when it
+cannot run Python. The plugin checks for a working Python 3.9+ using
+`python3`, `python`, then `py -3`. Unusable shortcuts are skipped quietly.
+
+Without a supported Python runtime, handoff registration is unavailable and
+ordinary sessions remain quiet. An existing
+source handoff claim still pauses local work: restore Python and check
+`alis workstation handoff status` before continuing. If `jq` is also missing,
+the plugin conservatively pauses while any claim for this agent exists.
+Restart the application after changing Python's PATH or updating the plugin.
 
 If the primer or skills do not take effect, confirm the plugin appears in Antigravity's Customizations page and restart it. For a manual global install, check `~/.gemini/config/plugins/alis/`. Confirm `jq` and `alis` are on the application's `PATH`, and that `ALIS_PRIMER` is not set to `off`.
 

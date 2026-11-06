@@ -46,14 +46,14 @@
     "PreInvocation": [
       {
         "type": "command",
-        "command": "python3 \"./hooks/handoff.py\" antigravity PreInvocation",
+        "command": "bash \"./hooks/handoff.sh\" PreInvocation",
         "timeout": 10
       }
     ],
     "PostInvocation": [
       {
         "type": "command",
-        "command": "python3 \"./hooks/handoff.py\" antigravity PostInvocation",
+        "command": "bash \"./hooks/handoff.sh\" PostInvocation",
         "timeout": 10
       }
     ],
@@ -63,7 +63,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"./hooks/handoff.py\" antigravity PreToolUse",
+            "command": "bash \"./hooks/handoff.sh\" PreToolUse",
             "timeout": 10
           }
         ]
@@ -75,7 +75,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"./hooks/handoff.py\" antigravity PostToolUse",
+            "command": "bash \"./hooks/handoff.sh\" PostToolUse",
             "timeout": 10
           }
         ]
@@ -84,7 +84,7 @@
     "Stop": [
       {
         "type": "command",
-        "command": "python3 \"./hooks/handoff.py\" antigravity Stop",
+        "command": "bash \"./hooks/handoff.sh\" Stop",
         "timeout": 10
       }
     ]
