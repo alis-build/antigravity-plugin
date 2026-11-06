@@ -107,7 +107,7 @@ else
 fi
 
 python3 -B "$root/tests/test_handoff.py" || fail=1
-python3 -B "$root/tests/test_python_runtime.py" || fail=1
+python3 -B "$root/tests/test_native_hooks.py" || fail=1
 
 if [ "$fail" -ne 0 ]; then
   echo "validate.sh: FAILED" >&2

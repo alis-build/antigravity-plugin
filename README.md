@@ -121,16 +121,12 @@ For immediate guidance, read `alis docs specialist` and
 
 ## Troubleshooting
 
-On Windows, a Microsoft Store `python3` shortcut can exist even when it
-cannot run Python. The plugin checks for a working Python 3.9+ using
-`python3`, `python`, then `py -3`. Unusable shortcuts are skipped quietly.
-
-Without a supported Python runtime, handoff registration is unavailable and
-ordinary sessions remain quiet. An existing
-source handoff claim still pauses local work: restore Python and check
-`alis workstation handoff status` before continuing. If `jq` is also missing,
-the plugin conservatively pauses while any claim for this agent exists.
-Restart the application after changing Python's PATH or updating the plugin.
+The plugin uses native hook protocol 1 in the `alis` binary. Upgrade the CLI
+first with `alis upgrade`; `alis hooks capabilities` must report `"protocol":1`.
+Restart the coding agent after updating. Python is not a runtime dependency.
+Older CLIs receive one startup upgrade notice; optional native checks wait for
+the upgrade, and existing handoff claims remain fenced by the compatibility
+adapter. Bash and `jq` are still used by the other plugin hooks.
 
 If the primer or skills do not take effect, confirm the plugin appears in Antigravity's Customizations page and restart it. For a manual global install, check `~/.gemini/config/plugins/alis/`. Confirm `jq` and `alis` are on the application's `PATH`, and that `ALIS_PRIMER` is not set to `off`.
 
@@ -158,3 +154,9 @@ machines, enrolled SSH and independent destination authentication. Use
 `alis workstation handoff status <id> --watch --json`, `open <id>`, or `cancel <id>`.
 Preserve exact Alis operation IDs and continue monitoring them rather than
 restarting a Define, Build or Deploy. Original local files and history remain.
+
+## Native hook development checks
+
+Run `ALIS_TEST_CLI=/absolute/path/to/alis-dev python3 -B tests/test_native_hooks.py`
+to check the bridges against a built CLI with Python absent from the hook PATH.
+Python is only a development test runner. Native handler tests live in the CLI.
