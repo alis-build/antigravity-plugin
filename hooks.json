@@ -3,6 +3,11 @@
     "PreInvocation": [
       {
         "type": "command",
+        "command": "bash ./hooks/check-cli.sh",
+        "timeout": 5
+      },
+      {
+        "type": "command",
         "command": "bash ./hooks/load-primer.sh",
         "timeout": 5
       },
