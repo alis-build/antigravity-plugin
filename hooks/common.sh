@@ -48,6 +48,12 @@ seen_session_start() {
   [ -n "$conv" ] && [ -e "$state_dir/$conv.started" ]
 }
 
+# A system message stays in the conversation whichever event leaves it.
+emit_system() {
+  [ -n "$1" ] || noop
+  jq -nc --arg context "$1" '{injectSteps: [{systemMessage: {systemMessage: $context}}]}'
+}
+
 # At SessionStart the context is a system message, which stays for the whole
 # conversation. Anywhere else it is an ephemeral message, which the model sees
 # for that one call only.

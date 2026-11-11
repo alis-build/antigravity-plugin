@@ -84,4 +84,33 @@ if [ -n "${ALIS_ALLOWED_SUBCMDS:-}" ]; then
     *) noop ;;
   esac
 fi
-jq -n '{decision: "auto_approve", reason: "Auto-approved alis CLI command (Alis Build plugin)."}'
+# Say who is calling: the conversation, so the CLI can attribute the command
+# (and a skill load) to this session, and this plugin with its version. Both
+# are global flags that identify the call and grant nothing. They go at the
+# end of the command, so a command with a "--" separator is left alone, and so
+# is one that already carries them. Only for a CLI known to accept them: one
+# that answers `alis hooks capabilities` (the flags are older than that
+# command). The answer is remembered so the check runs once.
+attributed=""
+if [ -e "$state_dir/cli-attributes" ] || {
+     alis hooks capabilities >/dev/null 2>&1 &&
+     { mkdir -p "$state_dir" && : > "$state_dir/cli-attributes"; } 2>/dev/null; }; then
+  plugin="$(jq -r '"\(.name)/\(.version)" | select(test("^[a-z0-9-]+/[0-9A-Za-z.+-]+$"))' \
+    "$(dirname "$0")/../plugin.json" 2>/dev/null || true)"
+  attributed=$(jq -r --arg plugin "$plugin" '
+    (.toolCall.args.CommandLine // "") as $cmd
+    | ((.conversationId // "") | if type == "string" and test("^[A-Za-z0-9_-]{1,128}$") then . else "" end) as $conv
+    | if ($cmd | test("(^| )--( |$)")) then empty else
+        ($cmd | sub(" +$"; ""))
+        + (if $conv != "" and ($cmd | test("(^| )--session-id( |=)") | not) then " --session-id " + $conv else "" end)
+        + (if $plugin != "" and ($cmd | test("(^| )--client-plugin( |=)") | not) then " --client-plugin " + $plugin else "" end)
+      end
+  ' <<<"$payload" 2>/dev/null) || attributed=""
+fi
+reason="Auto-approved alis CLI command (Alis Build plugin)."
+if [ -n "$attributed" ] && [ "$attributed" != "$cmd" ]; then
+  jq -n --arg reason "$reason" --arg command "$attributed" \
+    '{decision: "auto_approve", reason: $reason, overwrite: {CommandLine: $command}}'
+else
+  jq -n --arg reason "$reason" '{decision: "auto_approve", reason: $reason}'
+fi

@@ -34,5 +34,12 @@ mkdir -p "$state_dir" 2>/dev/null && printf '%s' "$sum" > "$state_dir/$session.p
 # Swallow every CLI failure (an older alis that rejects --hook exits 1). The
 # codex shape is plain text, which is what an ephemeral message takes.
 out="$(printf '%s' "$request" | alis skills suggest --hook --harness codex 2>/dev/null)" || noop
-case "$out" in "Possibly relevant Alis skill"*) noop ;; esac
-emit_context "$out"
+case "$out" in ""|"Possibly relevant Alis skill"*) noop ;; esac
+# Left as a system message, so it is still there on a later turn ("is that
+# from a skill?"); an ephemeral message is gone after one model call. The CLI
+# caps how many a conversation gets.
+case "$out" in
+  "Skill store match"*) out="$out
+If you answer without loading it, name the skill in your answer so the user knows it exists." ;;
+esac
+emit_system "$out"

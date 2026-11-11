@@ -2,7 +2,7 @@
   "$schema": "https://antigravity.google/schemas/v1/plugin.json",
   "name": "alis",
   "displayName": "Alis Build",
-  "version": "0.8.0",
+  "version": "0.9.0",
   "description": "Connect Google Antigravity to Alis Build through the alis CLI.",
   "logo": "assets/logo.svg",
   "author": {

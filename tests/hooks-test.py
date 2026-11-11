@@ -205,6 +205,54 @@ class HooksTest(unittest.TestCase):
                 self.assertEqual(self.approval(command)["decision"], "auto_approve")
         self.assertFalse((self.base / ".alis/agent-approval.json").exists())
 
+    def attributed(self, command, conversation="conv-7", **kwargs):
+        return self.invoke("allow-alis-cli.sh", payload={"conversationId": conversation, "toolCall": {
+            "name": "run_command", "args": {"CommandLine": command},
+        }}, **kwargs)
+
+    def test_commands_carry_the_conversation_and_the_plugin(self):
+        version = json.loads(ROOT.joinpath("plugin.json").read_text())["version"]
+        tail = f" --session-id conv-7 --client-plugin alis/{version}"
+        # A CLI that does not answer `hooks capabilities` gets its command as written.
+        self.cli("exit 1\n")
+        self.assertEqual(set(self.attributed("alis skills load demo --json")), {"decision", "reason"})
+        self.cli('[ "$1 $2" = "hooks capabilities" ] || exit 1\necho \'{"protocol":1}\'\n')
+        for command, want in (
+            ("alis skills load demo --via hook_hint", "alis skills load demo --via hook_hint" + tail),
+            ("  alis build acme.os.demo.v1 --json  ", "  alis build acme.os.demo.v1 --json" + tail),
+            ('alis ask "why did it fail?"', 'alis ask "why did it fail?"' + tail),
+            ("alis --session-id mine docs", f"alis --session-id mine docs --client-plugin alis/{version}"),
+        ):
+            with self.subTest(command=command):
+                result = self.attributed(command)
+                self.assertEqual(result["decision"], "auto_approve")
+                self.assertEqual(result["overwrite"], {"CommandLine": want})
+        # Left alone: a "--" separator, both flags already there, an unusable conversation id.
+        for command, conversation in (
+            ("alis rpc invoke x -- --raw", "conv-7"),
+            ("alis docs --session-id a --client-plugin b/1", "conv-7"),
+        ):
+            with self.subTest(command=command):
+                self.assertNotIn("overwrite", self.attributed(command, conversation=conversation))
+        self.assertEqual(self.attributed("alis docs", conversation="../x")["overwrite"],
+                         {"CommandLine": f"alis docs --client-plugin alis/{version}"})
+        # A command that must be confirmed is never rewritten.
+        self.assertEqual(set(self.attributed("alis deploy x --confirm-production")), {"decision", "reason"})
+
+    def test_topic_rules_are_well_formed(self):
+        # model_decision, not glob: agy 1.5.5 never activated a glob rule, from a
+        # plugin or a workspace, on reading or editing a matching file.
+        rules = sorted(p.name for p in ROOT.joinpath("rules").glob("*.md"))
+        self.assertEqual(rules, ["alis-build.md", "alis-dependencies.md", "alis-infra.md",
+                                 "alis-playground.md", "alis-protos.md"])
+        for name in rules:
+            if name == "alis-build.md":
+                continue
+            front = ROOT.joinpath("rules", name).read_text().split("\n---\n", 1)[0]
+            self.assertIn("trigger: model_decision", front)
+            self.assertRegex(front, r'description: "Alis Build [^"]+Read this before [^"]+"')
+            self.assertLess(ROOT.joinpath("rules", name).stat().st_size, 24 * 1024)
+
     def test_shell_composition_falls_through(self):
         for command in (
             "echo alis", "alisx build", "/tmp/alis build", "env alis build", "ali's' docs",
@@ -307,12 +355,19 @@ class HooksTest(unittest.TestCase):
                  'cat <<\'ALIS_ANSWER\'\n' + (self.RANKED if answer is None else answer) + '\nALIS_ANSWER\n')
         payload = {"workspacePaths": [str(self.workspace)], "invocationNum": 1,
                    "conversationId": conversation, "lastUserInput": prompt}
-        context = self.context("suggest-skills.sh", payload=payload, env={"TEST_SEEN": str(seen), **(env or {})})
+        result = self.invoke("suggest-skills.sh", payload=payload, env={"TEST_SEEN": str(seen), **(env or {})})
+        context = ""
+        if result:
+            # A system message, so the note is still there on a later turn.
+            self.assertEqual(set(result), {"injectSteps"})
+            self.assertEqual([set(step) for step in result["injectSteps"]], [{"systemMessage"}])
+            context = result["injectSteps"][0]["systemMessage"]["systemMessage"]
         return context, (seen.read_text() if seen.exists() else None)
 
     def test_a_skill_store_match_is_noted_beside_the_prompt(self):
         context, seen = self.suggest("are you able to help with grpc tracing?")
-        self.assertEqual(context, self.RANKED)
+        self.assertEqual(context, self.RANKED + "\nIf you answer without loading it, name the skill in your answer "
+                         "so the user knows it exists.")
         request, argv = seen.rstrip("\n").rsplit("\n", 1)
         self.assertEqual(argv, "skills suggest --hook --harness codex")
         self.assertEqual(json.loads(request), {
