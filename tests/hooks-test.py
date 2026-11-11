@@ -20,7 +20,7 @@ class HooksTest(unittest.TestCase):
         self.base = Path(self.temp.name)
         self.bin = self.base / "bin"
         self.bin.mkdir()
-        for command in ("jq", "bash", "cat", "dirname", "touch"):
+        for command in ("jq", "bash", "cat", "dirname", "touch", "cksum", "mkdir"):
             self.bin.joinpath(command).symlink_to(shutil.which(command))
         self.env = {
             "HOME": str(self.base),
@@ -254,8 +254,61 @@ class HooksTest(unittest.TestCase):
                                      env={"TEST_MARKER": str(marker)}), {})
         self.assertFalse(marker.exists())
 
+    RANKED = ("Skill store match for this request — Alis skill: dbd-add-tracing-grpc-go — Adds tracing.\n"
+              "Load with `alis skills load dbd-add-tracing-grpc-go --via hook_hint` if relevant; otherwise ignore this note.")
+
+    def suggest(self, prompt, conversation="conv-1", answer=None, env=None):
+        """Runs the suggest hook against a fake CLI; returns (context, the request the CLI got)."""
+        seen = self.base / "seen"
+        seen.unlink(missing_ok=True)
+        self.cli('cat > "$TEST_SEEN"\nprintf "\\n%s\\n" "$*" >> "$TEST_SEEN"\n'
+                 'cat <<\'ALIS_ANSWER\'\n' + (self.RANKED if answer is None else answer) + '\nALIS_ANSWER\n')
+        payload = {"workspacePaths": [str(self.workspace)], "invocationNum": 1,
+                   "conversationId": conversation, "lastUserInput": prompt}
+        context = self.context("suggest-skills.sh", payload=payload, env={"TEST_SEEN": str(seen), **(env or {})})
+        return context, (seen.read_text() if seen.exists() else None)
+
+    def test_a_skill_store_match_is_noted_beside_the_prompt(self):
+        context, seen = self.suggest("are you able to help with grpc tracing?")
+        self.assertEqual(context, self.RANKED)
+        request, argv = seen.rstrip("\n").rsplit("\n", 1)
+        self.assertEqual(argv, "skills suggest --hook --harness codex")
+        self.assertEqual(json.loads(request), {
+            "hook_event_name": "UserPromptSubmit", "session_id": "conv-1", "cwd": str(self.workspace),
+            "permission_mode": "", "prompt": "are you able to help with grpc tracing?",
+        })
+
+    def test_a_local_guess_and_an_empty_answer_are_not_noted(self):
+        guess = "Possibly relevant Alis skill: build-your-first-ios-app — Guide builders.\nLoad with `alis skills load <id>` if relevant; otherwise ignore this note."
+        context, seen = self.suggest("how are sendgrid templates managed?", answer=guess)
+        self.assertEqual(context, "")
+        self.assertIsNotNone(seen)
+        self.cli("cat >/dev/null\nexit 0\n")
+        payload = {"conversationId": "conv-2", "lastUserInput": "rename this variable please"}
+        self.assertEqual(self.invoke("suggest-skills.sh", payload=payload), {})
+        self.cli("cat >/dev/null\necho 'unknown flag: --hook' >&2\nexit 1\n")
+        payload["conversationId"] = "conv-3"
+        self.assertEqual(self.invoke("suggest-skills.sh", payload=payload), {})
+
+    def test_a_prompt_is_asked_about_once(self):
+        # PreInvocation repeats the most recent prompt on an invocation that is
+        # not a new one; only a new prompt, or another conversation, asks again.
+        prompt = "are you able to help with grpc tracing?"
+        self.assertIsNotNone(self.suggest(prompt)[1])
+        self.assertEqual(self.suggest(prompt), ("", None))
+        self.assertIsNotNone(self.suggest("and with spanner indexes?")[1])
+        self.assertIsNotNone(self.suggest(prompt, conversation="conv-9")[1])
+
+    def test_suggestions_can_be_switched_off_and_need_a_prompt(self):
+        self.assertEqual(self.suggest("are you able to help with grpc tracing?", env={"ALIS_SUGGEST_ALWAYS": "0"}), ("", None))
+        self.assertEqual(self.suggest(""), ("", None))
+        self.assertEqual(self.suggest("help with grpc tracing please", conversation="../../etc"), ("", None))
+        self.bin.joinpath("alis").unlink()
+        payload = {"conversationId": "conv-4", "lastUserInput": "help with grpc tracing please"}
+        self.assertEqual(self.invoke("suggest-skills.sh", payload=payload), {})
+
     def test_bad_input_and_missing_jq_are_quiet(self):
-        for script in ("load-primer.sh", "inject-service-context.sh", "sync-skills.sh", "allow-alis-cli.sh"):
+        for script in ("load-primer.sh", "inject-service-context.sh", "sync-skills.sh", "allow-alis-cli.sh", "suggest-skills.sh"):
             for raw in ("", "not json", "[]", "null"):
                 with self.subTest(script=script, raw=raw):
                     self.assertEqual(self.invoke(script, raw=raw), {})
