@@ -66,25 +66,69 @@ class HooksTest(unittest.TestCase):
         self.assertEqual(set(steps[0]), {"ephemeralMessage"})
         return steps[0]["ephemeralMessage"]
 
-    def test_primer_gating(self):
+    def start(self, script="load-primer.sh", conversation="conv-start", **extra):
+        """Runs a hook as SessionStart; returns the system message it leaves, or ""."""
+        payload = {"hookEventName": "SessionStart", "conversationId": conversation,
+                   "workspacePaths": [str(self.workspace)], **extra.pop("payload", {})}
+        result = self.invoke(script, payload=payload, **extra)
+        if not result:
+            return ""
+        self.assertEqual(set(result), {"injectSteps"})
+        self.assertEqual(len(result["injectSteps"]), 1)
+        self.assertEqual(set(result["injectSteps"][0]), {"systemMessage"})
+        self.assertEqual(set(result["injectSteps"][0]["systemMessage"]), {"systemMessage"})
+        return result["injectSteps"][0]["systemMessage"]["systemMessage"]
+
+    def test_primer_is_given_once_at_session_start(self):
+        # A system message stays for the whole conversation, so it is given once.
+        self.assertIn("# Alis Build — Define, Build, Deploy (DBD)", self.start())
+        for invocation in (0, 1, 8):
+            with self.subTest(invocation=invocation):
+                self.assertEqual(self.context(payload={
+                    "workspacePaths": [str(self.workspace)], "invocationNum": invocation,
+                    "conversationId": "conv-start", "hookEventName": "PreInvocation",
+                }), "")
+        # Outside a workspace there is no primer; the refresher is a rule.
+        self.assertEqual(self.start(conversation="conv-plain", payload={"workspacePaths": [str(self.plain)]}), "")
+
+    def test_primer_without_session_start(self):
+        # An Antigravity that never fires SessionStart still gets the primer,
+        # before the first model call only.
         self.assertIn("# Alis Build — Define, Build, Deploy (DBD)", self.context())
         for invocation in (1, 8):
             with self.subTest(invocation=invocation):
-                self.assertIn("# Alis Build — DBD refresher", self.context(payload={
+                self.assertEqual(self.context(payload={
                     "workspacePaths": [str(self.workspace)], "invocationNum": invocation,
-                }))
-        payload = {"workspacePaths": [str(self.plain)], "invocationNum": 0}
-        self.assertEqual(self.context(payload=payload), "")
+                }), "")
         self.cli()
-        self.assertIn("DBD refresher", self.context(payload=payload))
+        self.assertEqual(self.context(payload={"workspacePaths": [str(self.plain)], "invocationNum": 0}), "")
 
     def test_primer_overrides(self):
-        self.assertEqual(self.context(env={"ALIS_PRIMER": "off"}), "")
-        self.assertIn("DBD refresher", self.context(env={"ALIS_PRIMER": "digest"}))
-        self.assertIn("Define, Build, Deploy (DBD)", self.context(
-            payload={"workspacePaths": [str(self.plain)], "invocationNum": 7},
-            env={"ALIS_PRIMER": "full"},
+        for mode in ("off", "digest"):
+            self.assertEqual(self.context(env={"ALIS_PRIMER": mode}), "")
+            self.assertEqual(self.start(env={"ALIS_PRIMER": mode}), "")
+        self.assertIn("Define, Build, Deploy (DBD)", self.start(
+            conversation="conv-full", payload={"workspacePaths": [str(self.plain)]}, env={"ALIS_PRIMER": "full"},
         ))
+
+    def test_refresher_rule_stays_in_sync(self):
+        rule = ROOT.joinpath("rules/alis-build.md").read_text()
+        front, body = rule.split("\n---\n", 1)
+        self.assertIn("trigger: always_on", front)
+        self.assertEqual(body, ROOT.joinpath("context/dbd-digest.md").read_text())
+
+    def test_service_context_and_sync_move_to_session_start(self):
+        self.assertIn("Package ID: acme.os.demo.v1", self.start("inject-service-context.sh"))
+        later = {"workspacePaths": [str(self.workspace)], "invocationNum": 3, "conversationId": "conv-start"}
+        self.assertEqual(self.context("inject-service-context.sh", payload=later), "")
+        # Without SessionStart the pointers are re-injected before every call.
+        later["conversationId"] = "conv-legacy"
+        self.assertIn("Package ID: acme.os.demo.v1", self.context("inject-service-context.sh", payload=later))
+        marker = self.base / "synced"
+        self.cli('touch "$TEST_MARKER"\n')
+        first = {"workspacePaths": [str(self.workspace)], "invocationNum": 0, "conversationId": "conv-start"}
+        self.assertEqual(self.invoke("sync-skills.sh", payload=first, env={"TEST_MARKER": str(marker)}), {})
+        self.assertFalse(marker.exists(), "sync ran again after SessionStart had handled the conversation")
 
     def test_workspace_input_not_hook_cwd(self):
         # Invocation zero may be absent under protojson's default-value omission.
@@ -100,9 +144,7 @@ class HooksTest(unittest.TestCase):
         shutil.copytree(ROOT / "hooks", copy / "hooks")
         (copy / "context").mkdir()
         shutil.copy(ROOT / "context/dbd-primer.md", copy / "context")
-        self.assertIn("Define, Build, Deploy (DBD)", self.context(
-            root=copy, env={"ALIS_PRIMER": "digest"},
-        ))
+        self.assertIn("Define, Build, Deploy (DBD)", self.context(root=copy))
         (copy / "context/dbd-primer.md").unlink()
         self.assertEqual(self.context(root=copy), "")
 
@@ -160,7 +202,7 @@ class HooksTest(unittest.TestCase):
             'alis rpc invoke acme.os.demo.v1.Service/Get -d \'{"id": "123", "tags": ["a", "b"]}\' --json',
         ):
             with self.subTest(command=command):
-                self.assertEqual(self.approval(command)["decision"], "allow")
+                self.assertEqual(self.approval(command)["decision"], "auto_approve")
         self.assertFalse((self.base / ".alis/agent-approval.json").exists())
 
     def test_shell_composition_falls_through(self):
@@ -189,9 +231,9 @@ class HooksTest(unittest.TestCase):
 
     def test_optional_subcommand_allowlist(self):
         env = {"ALIS_ALLOWED_SUBCMDS": "define build deploy operations"}
-        self.assertEqual(self.approval("alis build --json", env=env)["decision"], "allow")
-        self.assertEqual(self.approval("alis --cwd /tmp/work build --json", env=env)["decision"], "allow")
-        self.assertEqual(self.approval("alis --cwd=/tmp/work --json operations wait op/1", env=env)["decision"], "allow")
+        self.assertEqual(self.approval("alis build --json", env=env)["decision"], "auto_approve")
+        self.assertEqual(self.approval("alis --cwd /tmp/work build --json", env=env)["decision"], "auto_approve")
+        self.assertEqual(self.approval("alis --cwd=/tmp/work --json operations wait op/1", env=env)["decision"], "auto_approve")
         self.assertEqual(self.approval("alis docs", env=env), {})
         self.assertEqual(self.approval("alis --cwd /tmp/work docs", env=env), {})
         self.assertEqual(self.approval("alis", env=env), {})
@@ -207,7 +249,7 @@ class HooksTest(unittest.TestCase):
                 "name": "view_file",
                 "args": {"AbsolutePath": str(self.definitions / "demo.proto")},
             },
-        })["decision"], "allow")
+        })["decision"], "auto_approve")
         self.assertEqual(self.invoke("allow-alis-cli.sh", payload={
             "workspacePaths": [str(self.workspace)],
             "toolCall": {
@@ -319,7 +361,9 @@ class HooksTest(unittest.TestCase):
     def test_manifest_handlers_execute_from_plugin_root(self):
         config = json.loads(ROOT.joinpath("hooks.json").read_text())
         payload = {"invocationNum": 1, "workspacePaths": [str(self.workspace)]}
-        for handler in config["alis-context"]["PreInvocation"]:
+        self.assertEqual([h["command"] for h in config["alis-context"]["PreInvocation"]][-1], "bash ./hooks/suggest-skills.sh")
+        self.assertNotIn("bash ./hooks/suggest-skills.sh", [h["command"] for h in config["alis-context"]["SessionStart"]])
+        for handler in config["alis-context"]["SessionStart"] + config["alis-context"]["PreInvocation"]:
             result = subprocess.run(handler["command"], shell=True, cwd=ROOT,
                                     input=json.dumps(payload), text=True, capture_output=True,
                                     env=self.env, timeout=handler["timeout"])
@@ -331,7 +375,7 @@ class HooksTest(unittest.TestCase):
         self.assertTrue(ROOT.joinpath(group["hooks"][0]["command"].split()[-1]).is_file())
 
     def test_compatibility_primer_stays_in_sync(self):
-        gemini = ROOT.joinpath("GEMINI.md").read_text().split("\n---\n\n", 1)[1]
+        gemini = ROOT.joinpath("gemini/GEMINI.md").read_text().split("\n---\n\n", 1)[1]
         self.assertEqual(gemini, ROOT.joinpath("context/dbd-primer.md").read_text())
 
 

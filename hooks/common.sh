@@ -15,13 +15,47 @@ workspaces() {
   ' 2>/dev/null
 }
 
-# Protojson can omit zero-valued fields. Do not infer a Claude source event:
-# Antigravity exposes an invocation counter, not startup/resume/compact events.
+# Protojson can omit zero-valued fields, so a missing counter is invocation 0.
 first_invocation() {
   printf '%s' "$payload" | jq -e '(.invocationNum // 0) == 0' >/dev/null 2>&1
 }
 
+# The conversation id, when it is safe to use as a file name; else empty.
+conversation() {
+  printf '%s' "$payload" | jq -r '
+    (.conversationId // "") | select(type == "string" and test("^[A-Za-z0-9_-]{1,128}$"))
+  ' 2>/dev/null || true
+}
+
+# Small per-conversation notes the hooks leave for each other.
+state_dir="${XDG_CACHE_HOME:-$HOME/.cache}/alis/antigravity"
+
+# SessionStart fires once per conversation; PreInvocation fires before every
+# model call. Work that belongs to the start of a conversation runs at
+# SessionStart and leaves a marker, so the PreInvocation copy of the same hook
+# (kept for an Antigravity without SessionStart) knows to stand down.
+at_session_start() {
+  printf '%s' "$payload" | jq -e '.hookEventName == "SessionStart"' >/dev/null 2>&1 || return 1
+  local conv; conv="$(conversation)"
+  if [ -n "$conv" ]; then
+    { mkdir -p "$state_dir" && : > "$state_dir/$conv.started"; } 2>/dev/null || true
+  fi
+  return 0
+}
+
+seen_session_start() {
+  local conv; conv="$(conversation)"
+  [ -n "$conv" ] && [ -e "$state_dir/$conv.started" ]
+}
+
+# At SessionStart the context is a system message, which stays for the whole
+# conversation. Anywhere else it is an ephemeral message, which the model sees
+# for that one call only.
 emit_context() {
   [ -n "$1" ] || noop
-  jq -nc --arg context "$1" '{injectSteps: [{ephemeralMessage: $context}]}'
+  if printf '%s' "$payload" | jq -e '.hookEventName == "SessionStart"' >/dev/null 2>&1; then
+    jq -nc --arg context "$1" '{injectSteps: [{systemMessage: {systemMessage: $context}}]}'
+  else
+    jq -nc --arg context "$1" '{injectSteps: [{ephemeralMessage: $context}]}'
+  fi
 }

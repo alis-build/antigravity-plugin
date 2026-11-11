@@ -1,9 +1,14 @@
 #!/usr/bin/env bash
 # Map each mounted Alis build/define folder to its counterpart and package.
-# Re-inject transient pointers so they survive context compaction.
+# Given once, at SessionStart, as a system message that stays in the
+# conversation. On an Antigravity without SessionStart it is re-injected before
+# every model call, because an ephemeral message lasts one call only.
 set -euo pipefail
 hook_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$hook_dir/common.sh"
+if ! at_session_start; then
+  seen_session_start && noop
+fi
 
 service_context() {
   local dir="$1" root rest org side s relpath definedir builddir pkg f

@@ -22,14 +22,14 @@ request="$(printf '%s' "$payload" | jq -c '
    permission_mode: "", prompt: .lastUserInput}' 2>/dev/null)" || noop
 [ -n "$request" ] || noop
 
-# PreInvocation carries the most recent prompt, so an invocation that is not a
-# new prompt would ask about the same one again. Ask once per prompt: remember
+# PreInvocation fires before every model call and carries the most recent
+# prompt each time, so a turn with tool calls would ask about the same prompt
+# again and again. Ask once per prompt: remember
 # a checksum of the last one asked about, per conversation.
 session="$(printf '%s' "$request" | jq -r '.session_id' 2>/dev/null)" || noop
-state_dir="${XDG_CACHE_HOME:-$HOME/.cache}/alis/antigravity-suggest"
 sum="$(printf '%s' "$request" | jq -r '.prompt' 2>/dev/null | cksum 2>/dev/null)" || noop
-if [ -r "$state_dir/$session" ] && [ "$(cat "$state_dir/$session" 2>/dev/null)" = "$sum" ]; then noop; fi
-mkdir -p "$state_dir" 2>/dev/null && printf '%s' "$sum" > "$state_dir/$session" 2>/dev/null || true
+if [ -r "$state_dir/$session.prompt" ] && [ "$(cat "$state_dir/$session.prompt" 2>/dev/null)" = "$sum" ]; then noop; fi
+mkdir -p "$state_dir" 2>/dev/null && printf '%s' "$sum" > "$state_dir/$session.prompt" 2>/dev/null || true
 
 # Swallow every CLI failure (an older alis that rejects --hook exits 1). The
 # codex shape is plain text, which is what an ephemeral message takes.

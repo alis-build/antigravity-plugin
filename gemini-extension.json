@@ -2,7 +2,7 @@
   "name": "alis",
   "version": "0.8.0",
   "description": "Connect Google Antigravity to Alis Build through the alis CLI.",
-  "contextFileName": "GEMINI.md",
+  "contextFileName": "gemini/GEMINI.md",
   "author": {
     "name": "Alis Build"
   }

@@ -1,10 +1,28 @@
 {
+  "$schema": "https://antigravity.google/schemas/v1/plugin.json",
   "name": "alis",
+  "displayName": "Alis Build",
   "version": "0.8.0",
   "description": "Connect Google Antigravity to Alis Build through the alis CLI.",
+  "logo": "assets/logo.svg",
   "author": {
     "name": "Alis Build"
   },
+  "homepage": "https://alis.build",
   "repository": "https://github.com/alis-build/antigravity-plugin",
-  "license": "MIT"
+  "license": "MIT",
+  "keywords": [
+    "alis",
+    "alis-build",
+    "protobuf",
+    "grpc",
+    "cloud-run",
+    "deploy",
+    "skills"
+  ],
+  "suggestedPrompts": [
+    "Use Alis Build to list the build environments I can access.",
+    "Show the recent builds for this service and what the last deploy did.",
+    "Is there an Alis skill for adding a Pub/Sub event handler to my service?"
+  ]
 }

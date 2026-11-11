@@ -21,7 +21,7 @@ if [ "$tool" != "run_command" ]; then
           end
       ' <<<"$payload" 2>/dev/null) || noop
       [ "$ok" = "yes" ] || noop
-      jq -n '{decision: "allow", reason: "Auto-approved workspace file access within the same build environment (Alis Build plugin)."}'
+      jq -n '{decision: "auto_approve", reason: "Auto-approved workspace file access within the same build environment (Alis Build plugin)."}'
       exit 0
       ;;
     *)
@@ -84,4 +84,4 @@ if [ -n "${ALIS_ALLOWED_SUBCMDS:-}" ]; then
     *) noop ;;
   esac
 fi
-jq -n '{decision: "allow", reason: "Auto-approved alis CLI command (Alis Build plugin)."}'
+jq -n '{decision: "auto_approve", reason: "Auto-approved alis CLI command (Alis Build plugin)."}'

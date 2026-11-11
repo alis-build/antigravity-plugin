@@ -1,5 +1,27 @@
 {
   "alis-context": {
+    "SessionStart": [
+      {
+        "type": "command",
+        "command": "bash ./hooks/check-cli.sh",
+        "timeout": 5
+      },
+      {
+        "type": "command",
+        "command": "bash ./hooks/load-primer.sh",
+        "timeout": 5
+      },
+      {
+        "type": "command",
+        "command": "bash ./hooks/inject-service-context.sh",
+        "timeout": 5
+      },
+      {
+        "type": "command",
+        "command": "bash ./hooks/sync-skills.sh",
+        "timeout": 5
+      }
+    ],
     "PreInvocation": [
       {
         "type": "command",

@@ -95,6 +95,18 @@ else
   echo "skip: python3 tomllib unavailable, TOML parse not checked"
 fi
 
+# 7b. Antigravity's own validator, in the mode the Marketplace requires (soft:
+# skipped when agy is not installed).
+if command -v agy >/dev/null 2>&1; then
+  if agy plugin validate --strict "$root" >/dev/null 2>&1; then
+    ok "agy plugin validate --strict"
+  else
+    err "agy plugin validate --strict failed: $(agy plugin validate --strict "$root" 2>&1 | tail -6)"
+  fi
+else
+  echo "skip: agy unavailable, strict plugin validation not checked"
+fi
+
 # 8. Run behavior checks with an isolated HOME and fake CLI.
 if command -v python3 >/dev/null 2>&1; then
   if python3 "$root/tests/hooks-test.py"; then

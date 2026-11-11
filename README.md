@@ -1,8 +1,5 @@
 # Alis Build Antigravity Plugin
 
-This prepared update aligns terminology and artifact reading with the coordinated
-CLI copy pass (proposed CLI 1.174.2). Publish the CLI and plugins together.
-
 <p align="center">
   <img src="assets/connectivity.svg" alt="Google Antigravity connected to Alis Build" width="760">
 </p>
@@ -15,11 +12,11 @@ Use this plugin to let Google Antigravity work with build environments, products
 
 ## What You Get
 
-- A workspace-aware Define-Build-Deploy primer: the full guide on the first model invocation inside an `alis.build` workspace, a short refresher on later invocations, and just the refresher outside a workspace when `alis` is installed. No workspace and no CLI means no primer. Override with `ALIS_PRIMER=full|digest|off`.
+- A workspace-aware Define-Build-Deploy primer: the full guide once, at the start of a conversation inside an `alis.build` workspace, and a short refresher that is always in context as a plugin rule (`rules/alis-build.md`). `ALIS_PRIMER=full` gives the full guide outside a workspace too; `off` or `digest` gives only the refresher.
 - Package ids and pointers between a service's protobuf definitions and implementation, including when a mounted workspace is inside `infra/` or `.playground/`; multiple mounted workspaces are supported.
 - Quiet, local-first discovery and capture skills: `alis-discover` activates on platform-shaped work (never on generic coding just because you are inside a workspace), probes the local catalogue in ~40ms, and loads a registry skill only on a distinctive match; `alis-capture` turns just-completed work into a reusable team skill; `alis-getting-started` walks newcomers through their first Define-Build-Deploy cycle
 - A skill the Skill store ranks as a match for your request is noted beside the prompt, so the agent can load it: one skill at most, and nothing when no skill fits. Needs `alis` 1.187.18 or later. It costs each prompt most of a second and sends the prompt text to the Skill store; set `ALIS_SUGGEST_ALWAYS=0` to switch it off.
-- A quiet background catalogue refresh on the first invocation, explicitly using `alis skills sync --cache-only --harness antigravity` for compatibility with older CLIs. The plugin never installs native user skills; the CLI may clean up retired sync-managed entries.
+- A quiet background catalogue refresh at the start of a conversation, explicitly using `alis skills sync --cache-only --harness antigravity` for compatibility with older CLIs. The plugin never installs native user skills; the CLI may clean up retired sync-managed entries.
 - A native tool hook that lets plain `alis …` commands run without a confirmation prompt on every call, while `--confirm-production` (the production deploy gate), `--approve`, and `alis blocks uninstall … --yes` always reach you for confirmation.
 
 ## Before You Start
@@ -75,7 +72,7 @@ Review the latest deploy logs for this service and suggest the next action.
 
 Antigravity will ask before running tools that require approval.
 
-The plugin's `PreToolUse` hook auto-approves single, simple `alis ...` commands (including balanced single/double-quoted JSON or query arguments and leading global flags like `--cwd`), as well as same-org `build`/`define` file and search tools. Commands with shell expansion, chaining or redirection fall through to Antigravity's normal confirmation flow. Commands carrying `--confirm-production` or `--approve`, and `alis blocks uninstall … --yes`, return `force_ask`, which prompts even when permissions were previously cached. To restrict auto-approval, set `ALIS_ALLOWED_SUBCMDS` to a space-separated list (e.g. `ALIS_ALLOWED_SUBCMDS="define build deploy operations"`); unset means every subcommand.
+The plugin's `PreToolUse` hook answers `auto_approve` for single, simple `alis ...` commands (including balanced single/double-quoted JSON or query arguments and leading global flags like `--cwd`), as well as same-org `build`/`define` file and search tools. Commands with shell expansion, chaining or redirection fall through to Antigravity's normal confirmation flow. Commands carrying `--confirm-production` or `--approve`, and `alis blocks uninstall … --yes`, return `force_ask`, which prompts even when permissions were previously cached. To restrict auto-approval, set `ALIS_ALLOWED_SUBCMDS` to a space-separated list (e.g. `ALIS_ALLOWED_SUBCMDS="define build deploy operations"`); unset means every subcommand.
 
 ## Skills
 
@@ -91,14 +88,20 @@ Antigravity uses a root-level `hooks.json` with named hooks, camelCase inputs an
 
 | Claude behaviour | Antigravity adaptation |
 | --- | --- |
-| `SessionStart` primer and service context | `PreInvocation` returns `injectSteps` with transient `ephemeralMessage` context. Invocation 0 gets the full workspace primer; later invocations get the digest. |
-| Startup catalogue refresh | First invocation launches `sync --cache-only --harness antigravity` with all streams detached. Unsupported flags fail quietly, with no fallback to a broader sync. |
+| `SessionStart` primer and service context | `SessionStart` returns `injectSteps` with a `systemMessage`, which stays for the whole conversation. The short refresher is an `always_on` rule, so nothing is re-injected per model call. |
+| Startup catalogue refresh | `SessionStart` launches `sync --cache-only --harness antigravity` with all streams detached. Unsupported flags fail quietly, with no fallback to a broader sync. |
 | `UserPromptSubmit` skill suggestions | `PreInvocation` carries the most recent prompt as `lastUserInput`. `hooks/suggest-skills.sh` passes it to `alis skills suggest --hook` once per prompt and returns a Skill store match as an `ephemeralMessage`; the CLI's local guesses are dropped, as in the Claude plugin. Native discovery/capture skills still handle routing the agent starts itself. |
-| `PreToolUse` on `Bash` | `PreToolUse` on `run_command` and file/search tools reads `toolCall.args` and returns `allow` or `force_ask`. |
+| `PreToolUse` on `Bash` | `PreToolUse` on `run_command` and file/search tools reads `toolCall.args` and returns `auto_approve` or `force_ask`. (`allow` only passes the call on to the default policy, which then prompts.) |
 
-Antigravity exposes invocation counters rather than Claude's startup/resume/compact source field. The primer follows those counters and refreshes transient context on every invocation. `ALIS_PRIMER=off` disables the DBD primer; service pointers and catalogue refresh remain independent, as in the Claude plugin. No Claude permission-mode record is written: Antigravity does not supply that grant signal.
+Three facts about Antigravity's hooks shape this, each checked against a real `agy` (1.5.5):
 
-`gemini-extension.json`, `GEMINI.md`, and `policies/alis-cli.toml` remain for Gemini CLI compatibility. Gemini extension installs retain the standing full primer and shell policies; native Antigravity plugin installs use the root hook configuration above.
+- `PreInvocation` fires before every model call, not once per prompt. Only the skill suggestion runs there, and it asks once per prompt.
+- An `ephemeralMessage` lasts for one model call. A `systemMessage` from `SessionStart` stays, so start-of-conversation context is given that way.
+- Each start-of-conversation hook is also registered on `PreInvocation` for an Antigravity that does not fire `SessionStart`: it leaves a marker at `SessionStart` and stands down when it finds one.
+
+`ALIS_PRIMER=off` disables the full primer; the refresher rule, service pointers and catalogue refresh remain independent. No Claude permission-mode record is written: Antigravity does not supply that grant signal.
+
+`gemini-extension.json`, `gemini/GEMINI.md`, and `policies/alis-cli.toml` remain for Gemini CLI compatibility. Gemini extension installs retain the standing full primer and shell policies; native Antigravity plugin installs use the root hook configuration above.
 
 ## Validation
 
@@ -106,7 +109,7 @@ Antigravity exposes invocation counters rather than Claude's startup/resume/comp
 bash tests/validate.sh
 ```
 
-This checks manifests, shell syntax, primer consistency and native hook behaviour with a fake CLI, including workspace gating, service paths, detached catalogue refresh and permission boundaries. Tests do not contact Alis Build or modify installed skills.
+This checks manifests, shell syntax, Antigravity's own `agy plugin validate --strict` when `agy` is installed, primer consistency and native hook behaviour with a fake CLI, including workspace gating, service paths, detached catalogue refresh and permission boundaries. Tests do not contact Alis Build or modify installed skills.
 
 ## Conversation reading and package setup
 
