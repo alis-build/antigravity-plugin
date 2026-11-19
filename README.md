@@ -12,14 +12,12 @@ Use this plugin to let Google Antigravity work with build environments, products
 
 ## What You Get
 
-- A workspace-aware Define-Build-Deploy primer: the full guide once, at the start of a conversation inside an `alis.build` workspace, and a short refresher that is always in context as a plugin rule (`rules/alis-build.md`). `ALIS_PRIMER=full` gives the full guide outside a workspace too; `off` or `digest` gives only the refresher.
-- Package ids and pointers between a service's protobuf definitions and implementation, including when a mounted workspace is inside `infra/` or `.playground/`; multiple mounted workspaces are supported.
-- Quiet, local-first discovery and capture skills: `alis-discover` activates on platform-shaped work (never on generic coding just because you are inside a workspace), probes the local catalogue in ~40ms, and loads a registry skill only on a distinctive match; `alis-capture` turns just-completed work into a reusable team skill; `alis-getting-started` walks newcomers through their first Define-Build-Deploy cycle
-- A skill the Skill store ranks as a match for your request is noted beside the prompt, so the agent can load it: one skill at most, and nothing when no skill fits. The note stays in the conversation, and the agent names the skill even when it answers without loading it.
-- Four topic rules the agent reads when the work calls for them: protobuf contracts, a service's `infra/` Terraform, the playground, and dependency pins. Only their one-line descriptions sit in context until then.
-- `alis` commands carry the conversation id and the plugin version (`--session-id`, `--client-plugin`), so a skill load or a build is attributed to the session it came from. Antigravity notes on the tool result that the hook changed the command. Needs `alis` 1.187.18 or later. It costs each prompt most of a second and sends the prompt text to the Skill store; set `ALIS_SUGGEST_ALWAYS=0` to switch it off.
-- A quiet background catalogue refresh at the start of a conversation, explicitly using `alis skills sync --cache-only --harness antigravity` for compatibility with older CLIs. The plugin never installs native user skills; the CLI may clean up retired sync-managed entries.
-- A native tool hook that lets plain `alis …` commands run without a confirmation prompt on every call, while `--confirm-production` (the production deploy gate), `--approve`, and `alis blocks uninstall … --yes` always reach you for confirmation.
+- A concise Define-Build-Deploy refresher always in context as a plugin rule (`rules/alis-build.md`), plus four topic rules (`model_decision`) the agent reads when the work calls for them: protobuf contracts, a service's `infra/` Terraform, the playground, and dependency pins. Only their one-line descriptions sit in context until needed. Set `ALIS_PRIMER=full` if you also want the full `context/dbd-primer.md` injected at `SessionStart`.
+- A single consolidated `SessionStart` hook (`hooks/session-start.sh`) that checks CLI compatibility, detaches a background catalogue refresh (`alis skills sync --cache-only --harness antigravity`), and emits one concise workspace pointer with package IDs and build/define counterparts when inside an `alis.build` workspace (including `infra/` and `.playground/`). Outside an `alis.build` workspace with an up-to-date CLI, it stays completely silent.
+- Quiet, local-first discovery and capture skills: `alis-discover` activates on platform-shaped work (never on generic coding just because you are inside a workspace), probes the local catalogue in ~40ms, and loads a registry skill only on a distinctive match; `alis-capture` turns just-completed work into a reusable team skill; `alis-getting-started` walks newcomers through their first Define-Build-Deploy cycle.
+- Wake-word-gated Skill store suggestions on `PreInvocation`: by default (`ALIS_SUGGEST_ALWAYS=0`), `hooks/suggest-skills.sh` only queries `alis skills suggest --hook` when a prompt mentions `alis` or `skill`, keeping routine coding/test turns free of synchronous network latency and false-positive cards. Set `ALIS_SUGGEST_ALWAYS=1` to query on every prompt, or `ALIS_SUGGEST_ALWAYS=off` to disable it.
+- `alis` commands carry the conversation id and the plugin version (`--session-id`, `--client-plugin`), so a skill load or a build is attributed to the session it came from. Needs `alis` 1.187.18 or later.
+- A native tool hook that lets plain `alis …` commands and same-org build/define file tools run without a confirmation prompt on every call, while `--confirm-production` (the production deploy gate), `--approve`, `--reveal`, `alis environment destroy|unset`, and `alis blocks uninstall … --yes` always reach you for confirmation.
 
 ## Before You Start
 
@@ -90,17 +88,15 @@ Antigravity uses a root-level `hooks.json` with named hooks, camelCase inputs an
 
 | Claude behaviour | Antigravity adaptation |
 | --- | --- |
-| `SessionStart` primer and service context | `SessionStart` returns `injectSteps` with a `systemMessage`, which stays for the whole conversation. The short refresher is an `always_on` rule, so nothing is re-injected per model call. |
-| Startup catalogue refresh | `SessionStart` launches `sync --cache-only --harness antigravity` with all streams detached. Unsupported flags fail quietly, with no fallback to a broader sync. |
-| `UserPromptSubmit` skill suggestions | `PreInvocation` carries the most recent prompt as `lastUserInput`. `hooks/suggest-skills.sh` passes it to `alis skills suggest --hook` once per prompt and returns a Skill store match as a `systemMessage`; the CLI's local guesses are dropped, as in the Claude plugin. Native discovery/capture skills still handle routing the agent starts itself. |
-| `PreToolUse` on `Bash` | `PreToolUse` on `run_command` and file/search tools reads `toolCall.args` and returns `auto_approve` or `force_ask`. (`allow` only passes the call on to the default policy, which then prompts.) An approved command gets `overwrite` with `--session-id` and `--client-plugin` appended, when the CLI answers `alis hooks capabilities`. |
+| `SessionStart` primer, service context, CLI check, catalogue refresh | Single consolidated `hooks/session-start.sh` runs once at `SessionStart`, detaches `sync --cache-only --harness antigravity`, and emits at most one `systemMessage` (service pointers + CLI upgrade notice if outdated). The DBD refresher is an `always_on` rule (`rules/alis-build.md`), so the 185-line primer is only injected when `ALIS_PRIMER=full`. |
+| `UserPromptSubmit` skill suggestions | `PreInvocation` carries the most recent prompt as `lastUserInput`. `hooks/suggest-skills.sh` is wake-word gated (`alis`/`skill`) by default (`ALIS_SUGGEST_ALWAYS=0`; set `1` for every prompt or `off` to disable) and asks once per prompt with a 2s timeout, dropping local guesses. Native `alis-discover` handles quiet platform-shaped routing. |
+| `PreToolUse` on `Bash` | `PreToolUse` on `run_command` and file/search tools (`read_file`, `write_file`, `edit_file`, plus IDE tool names) reads `toolCall.args` and returns `auto_approve` or `force_ask` (including `--confirm-production`, `--approve`, `--reveal`, `environment destroy|unset`, and `blocks uninstall --yes`). Approved `alis` commands get `overwrite` with `--session-id` and `--client-plugin` appended. |
 
 Three facts about Antigravity's hooks shape this, each checked against a real `agy` (1.5.5):
 
-- `PreInvocation` fires before every model call, not once per prompt. Only the skill suggestion runs there, and it asks once per prompt.
-- An `ephemeralMessage` lasts for one model call. A `systemMessage` from `SessionStart` stays, so start-of-conversation context is given that way.
+- `PreInvocation` fires before every model call, not once per prompt. Only `suggest-skills.sh` runs there under `alis-context`, and it asks at most once per prompt.
+- Every hook that returns `injectSteps` renders a collapsible card in the UI, so `SessionStart` is consolidated into one script and stays silent outside `alis.build` workspaces when the CLI is up to date.
 - Glob-triggered rules never activated, from a plugin or from a workspace, on reading or editing a matching file. `model_decision` rules do: the topic rules use that trigger.
-- Each start-of-conversation hook is also registered on `PreInvocation` for an Antigravity that does not fire `SessionStart`: it leaves a marker at `SessionStart` and stands down when it finds one.
 
 `ALIS_PRIMER=off` disables the full primer; the refresher rule, service pointers and catalogue refresh remain independent. No Claude permission-mode record is written: Antigravity does not supply that grant signal.
 

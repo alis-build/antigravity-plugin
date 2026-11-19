@@ -7,11 +7,11 @@ tool=$(jq -r '.toolCall.name // empty' <<<"$payload" 2>/dev/null) || noop
 
 if [ "$tool" != "run_command" ]; then
   case "$tool" in
-    view_file|list_dir|grep_search|find_by_name|replace_file_content|write_to_file)
+    read_file|write_file|edit_file|view_file|list_dir|grep_search|find_by_name|replace_file_content|write_to_file)
       ok=$(jq -r '
         def org_root:
           capture("^(?<root>.*/alis\\.build/[^/]+)/(build|define)(/|$)") | .root;
-        (.toolCall.args // {} | (.AbsolutePath // .DirectoryPath // .SearchPath // .SearchDirectory // .TargetFile // empty)) as $target
+        (.toolCall.args // {} | (.Path // .AbsolutePath // .DirectoryPath // .SearchPath // .SearchDirectory // .TargetFile // empty)) as $target
         | if ($target | type) != "string" or ($target | length) == 0 or ($target | test("(^|/)\\.\\.(/|$)")) then
             "no"
           else
@@ -37,13 +37,17 @@ force_ask() {
   exit 0
 }
 
-# Never auto-approve production confirmation, approval overrides, or block uninstalls with --yes.
+# Never auto-approve production confirmation, approval overrides, secret reveals,
+# environment destroy/unset, or block uninstalls with --yes.
 # Checked BEFORE the simple-command filter so chained commands cannot bypass it.
 case "$cmd" in
-  *--confirm-production*|*--approve*)
+  *--confirm-production*|*--approve*|*--reveal*)
     force_ask ;;
 esac
 if [[ "$cmd" =~ (^|[^a-zA-Z0-9_-])alis[[:space:]].*blocks?([[:space:]]|$) && "$cmd" =~ (^|[[:space:]])uninstall([[:space:]]|$) && "$cmd" == *--yes* ]]; then
+  force_ask
+fi
+if [[ "$cmd" =~ (^|[^a-zA-Z0-9_-])alis[[:space:]].*environments?([[:space:]]|$) && "$cmd" =~ (^|[[:space:]])(destroy|unset)([[:space:]]|$) ]]; then
   force_ask
 fi
 

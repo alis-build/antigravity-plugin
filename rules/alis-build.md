@@ -56,19 +56,25 @@ target deployment environments and branch override. Present the CLI's pinned ret
 then execute it with `--confirm-production` and verify its operation. Keep approved
 arguments unchanged. Session modes, `--approve` and broad task intent grant no consent.
 
-Run one standalone Alis command per shell-tool call: no pipes, output trimming or redirects.
-Read help in full too; check the relevant subcommand's `--help` before concluding
-that a capability is missing.
+Run one standalone Alis command per shell-tool call: no pipes, output trimming, redirects,
+or leading `VAR=…`/`env` prefixes. Read help in full too; check the relevant subcommand's
+`--help` before concluding that a capability is missing.
 Use `environment list <org>.<product> --json` for target IDs and production flags,
-without variable values. Check CLI help when using a newly introduced command.
-Start long DBD work with `--async`; retain `name` and run `next`. Start/wait/describe
-use common top-level fields (`schemaVersion: 1`, `done`, `status`, `version`); legacy
-start `metadata` is different from typed wait output. Read full JSON and errors.
+without variable values; `environment variables` lists names only (`--reveal` prints values,
+prompts for confirmation, and lands them in the transcript). Check CLI help when using a
+newly introduced command. Start long DBD work with `--async` (never combine `--install` with
+`--async`); retain `name` and run `next`. Start/wait/describe use common top-level fields
+(`schemaVersion: 1`, `done`, `status`, `version`); legacy start `metadata` is different from
+typed wait output. Read full JSON and errors. A deployment's `RUNNING` state is steady state
+(up and serving), not in progress; `done: true` with `status: succeeded` is finished.
 Local agent background-task IDs are separate from Alis operation names; stopping a local
 wait never cancels server work. Use `alis logs build|deploy <op> --json`,
 `alis logs runtime [<pkg>] -e <env> [--since 1h] [--severity ERROR] [--contains <text>] --json`
 (never `gcloud logging read` or shell pipes), and `alis operations cancel <op> --json`
-with a matching CLI/backend release. Diagnose auth, package DNS and platform failures separately.
+with a matching CLI/backend release. Diagnose auth, package DNS and platform failures separately;
+recover git auth against an Alis remote once with `alis authorise <org>.<product> --json` (exit
+code 4 means `alis login`). Share static pages/files with `alis artifacts create` (using the
+account's brand via `alis artifacts design --json`), not Cloud Run.
 Direct DBD commands on a known target need no skill discovery. After a plugin update,
 restart the agent; `alis doctor --json` reports cache and recent hook observations.
 

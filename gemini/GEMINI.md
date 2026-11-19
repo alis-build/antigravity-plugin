@@ -105,12 +105,15 @@ directory.
 
 - **One standalone command per shell-tool call.** Use `alis --cwd /absolute/path <command>`
   for another workspace; after `service new`, use its `buildFolder`. Shell directory
-  changes can be reset or lost when work moves to background. Preserve the exact package,
+  changes can be reset or lost when work moves to background. Never prefix `alis` with an
+  environment assignment (`VAR=… alis …`) or `env`: the plugin recognises `alis` only as the
+  first token, so a prefixed call is not auto-approved. Preserve the exact package,
   version and deployment environment. Consult `alis --help` once if `--cwd` support is unknown;
   an older CLI needs updating before using this option.
 - **Discover deployment environments without values.** Use `alis environment list <org>.<product>
-  --json` for IDs, names, production classification and allowed branches. Request
-  `environment variables` only when the task actually needs variable values.
+  --json` for IDs, names, production classification and allowed branches.
+  `environment variables` lists names only; `--reveal` prints values, asks for
+  confirmation, and lands them in the transcript. Reveal only when the task needs a value.
 - **Parse stdout only under `--json`.** stdout carries exactly ONE final JSON object (or an
   error envelope — follow its `retry`/`agent` fields); progress streams as NDJSON on
   stderr. Read the whole result: no pipes, `head`, `tail`, `2>&1` or `2>/dev/null`.
@@ -121,6 +124,11 @@ directory.
   `version`, `notes` and `logsUri` when available (`schemaVersion: 1`). Start also
   retains legacy `metadata`; do not use that parser for wait/describe. With older
   CLIs, a missing `done` means false. Check errors before claiming success.
+  `status` is the operation's; a deployment's `state`/`status` is the deployed
+  service's lifecycle, where `RUNNING` means up and serving — the steady state
+  after a successful deploy, not a deploy in progress (newer CLIs add
+  `live: true` beside it). `done: true` with `status: succeeded` is finished:
+  do not keep polling it.
 - **Never poll with `sleep` loops.** Long operations print an operation name — block on it
   with `alis operations wait <op> --json` (`--async` results carry the exact command in
   `next`); `alis operations list --active --json` shows what is still running.

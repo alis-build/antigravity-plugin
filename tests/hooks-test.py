@@ -20,7 +20,7 @@ class HooksTest(unittest.TestCase):
         self.base = Path(self.temp.name)
         self.bin = self.base / "bin"
         self.bin.mkdir()
-        for command in ("jq", "bash", "cat", "dirname", "touch", "cksum", "mkdir"):
+        for command in ("jq", "bash", "cat", "dirname", "touch", "cksum", "mkdir", "grep", "find"):
             self.bin.joinpath(command).symlink_to(shutil.which(command))
         self.env = {
             "HOME": str(self.base),
@@ -78,6 +78,25 @@ class HooksTest(unittest.TestCase):
         self.assertEqual(set(result["injectSteps"][0]), {"systemMessage"})
         self.assertEqual(set(result["injectSteps"][0]["systemMessage"]), {"systemMessage"})
         return result["injectSteps"][0]["systemMessage"]["systemMessage"]
+
+    def test_session_start_is_consolidated_and_quiet_by_default(self):
+        # With an up-to-date CLI outside alis.build, SessionStart stays silent (0 UI cards).
+        self.cli('[ "$1 $2" = "hooks capabilities" ] && echo \'{"protocol":1}\' || exit 0\n')
+        self.assertEqual(self.start("session-start.sh", conversation="conv-plain",
+                                    payload={"workspacePaths": [str(self.plain)]}), "")
+        # Inside alis.build, SessionStart emits one concise pointer without dumping the 185-line primer.
+        text = self.start("session-start.sh", conversation="conv-svc")
+        self.assertIn("Package ID: acme.os.demo.v1", text)
+        self.assertNotIn("# Alis Build — Define, Build, Deploy (DBD)", text)
+        # ALIS_PRIMER=full opts back into the full primer, combined into the same single message.
+        full = self.start("session-start.sh", conversation="conv-full", env={"ALIS_PRIMER": "full"})
+        self.assertIn("Package ID: acme.os.demo.v1", full)
+        self.assertIn("# Alis Build — Define, Build, Deploy (DBD)", full)
+        # An outdated CLI adds the upgrade notice into the same single message.
+        self.cli("exit 1\n")
+        outdated = self.start("session-start.sh", conversation="conv-old")
+        self.assertIn("alis upgrade", outdated)
+        self.assertIn("Package ID: acme.os.demo.v1", outdated)
 
     def test_primer_is_given_once_at_session_start(self):
         # A system message stays for the whole conversation, so it is given once.
@@ -269,6 +288,9 @@ class HooksTest(unittest.TestCase):
     def test_human_approval_flags_always_prompt(self):
         for command in (
             "alis deploy --confirm-production", "alis build --approve=true",
+            "alis environment variables acme.os -e prod --reveal --json",
+            "alis environment destroy acme.os -e dev --json",
+            "alis environment unset acme.os -e dev KEY --json",
             "alis blocks uninstall demo --yes", "alis block --yes uninstall demo",
             "alis --cwd /tmp/x blocks uninstall demo --yes",
             "alis docs && alis deploy --confirm-production",
@@ -291,13 +313,15 @@ class HooksTest(unittest.TestCase):
         self.assertEqual(self.invoke("allow-alis-cli.sh", payload={"toolCall": {
             "name": "view_file", "args": {"CommandLine": "alis docs"},
         }}), {})
-        self.assertEqual(self.invoke("allow-alis-cli.sh", payload={
-            "workspacePaths": [str(self.workspace)],
-            "toolCall": {
-                "name": "view_file",
-                "args": {"AbsolutePath": str(self.definitions / "demo.proto")},
-            },
-        })["decision"], "auto_approve")
+        for tool_name, arg_key in (("view_file", "AbsolutePath"), ("read_file", "Path"), ("edit_file", "Path"), ("write_file", "Path")):
+            with self.subTest(tool=tool_name):
+                self.assertEqual(self.invoke("allow-alis-cli.sh", payload={
+                    "workspacePaths": [str(self.workspace)],
+                    "toolCall": {
+                        "name": tool_name,
+                        "args": {arg_key: str(self.definitions / "demo.proto")},
+                    },
+                })["decision"], "auto_approve")
         self.assertEqual(self.invoke("allow-alis-cli.sh", payload={
             "workspacePaths": [str(self.workspace)],
             "toolCall": {
@@ -346,6 +370,8 @@ class HooksTest(unittest.TestCase):
 
     RANKED = ("Skill store match for this request — Alis skill: dbd-add-tracing-grpc-go — Adds tracing.\n"
               "Load with `alis skills load dbd-add-tracing-grpc-go --via hook_hint` if relevant; otherwise ignore this note.")
+    RANKED_ALISX = ("AlisX Skill Store match for this request — Alis skill: dbd-add-tracing-grpc-go — Adds tracing.\n"
+                    "Load with `alis skills load dbd-add-tracing-grpc-go --via hook_hint` if relevant; otherwise ignore this note.")
 
     def suggest(self, prompt, conversation="conv-1", answer=None, env=None):
         """Runs the suggest hook against a fake CLI; returns (context, the request the CLI got)."""
@@ -355,7 +381,8 @@ class HooksTest(unittest.TestCase):
                  'cat <<\'ALIS_ANSWER\'\n' + (self.RANKED if answer is None else answer) + '\nALIS_ANSWER\n')
         payload = {"workspacePaths": [str(self.workspace)], "invocationNum": 1,
                    "conversationId": conversation, "lastUserInput": prompt}
-        result = self.invoke("suggest-skills.sh", payload=payload, env={"TEST_SEEN": str(seen), **(env or {})})
+        merged_env = {"ALIS_SUGGEST_ALWAYS": "1", **(env or {})}
+        result = self.invoke("suggest-skills.sh", payload=payload, env={"TEST_SEEN": str(seen), **merged_env})
         context = ""
         if result:
             # A system message, so the note is still there on a later turn.
@@ -374,6 +401,18 @@ class HooksTest(unittest.TestCase):
             "hook_event_name": "UserPromptSubmit", "session_id": "conv-1", "cwd": str(self.workspace),
             "permission_mode": "", "prompt": "are you able to help with grpc tracing?",
         })
+        # Also matches the newer "AlisX Skill Store match" prefix.
+        alisx_ctx, _ = self.suggest("alis, help with grpc tracing?", conversation="conv-alisx",
+                                    answer=self.RANKED_ALISX, env={"ALIS_SUGGEST_ALWAYS": "0"})
+        self.assertIn("If you answer without loading it", alisx_ctx)
+
+    def test_suggestions_are_wake_word_gated_by_default(self):
+        # Routine prompts (e.g. go test ./...) do not invoke the CLI when ALIS_SUGGEST_ALWAYS is unset/0.
+        self.assertEqual(self.suggest("run go test ./...", conversation="conv-gate", env={"ALIS_SUGGEST_ALWAYS": "0"}), ("", None))
+        # Explicit wake words ("alis" or "skill") still reach the CLI.
+        ctx, seen = self.suggest("is there a skill for grpc tracing?", conversation="conv-gate", env={"ALIS_SUGGEST_ALWAYS": "0"})
+        self.assertIsNotNone(seen)
+        self.assertIn("dbd-add-tracing-grpc-go", ctx)
 
     def test_a_local_guess_and_an_empty_answer_are_not_noted(self):
         guess = "Possibly relevant Alis skill: build-your-first-ios-app — Guide builders.\nLoad with `alis skills load <id>` if relevant; otherwise ignore this note."
@@ -382,10 +421,10 @@ class HooksTest(unittest.TestCase):
         self.assertIsNotNone(seen)
         self.cli("cat >/dev/null\nexit 0\n")
         payload = {"conversationId": "conv-2", "lastUserInput": "rename this variable please"}
-        self.assertEqual(self.invoke("suggest-skills.sh", payload=payload), {})
+        self.assertEqual(self.invoke("suggest-skills.sh", payload=payload, env={"ALIS_SUGGEST_ALWAYS": "1"}), {})
         self.cli("cat >/dev/null\necho 'unknown flag: --hook' >&2\nexit 1\n")
         payload["conversationId"] = "conv-3"
-        self.assertEqual(self.invoke("suggest-skills.sh", payload=payload), {})
+        self.assertEqual(self.invoke("suggest-skills.sh", payload=payload, env={"ALIS_SUGGEST_ALWAYS": "1"}), {})
 
     def test_a_prompt_is_asked_about_once(self):
         # PreInvocation repeats the most recent prompt on an invocation that is
@@ -397,27 +436,28 @@ class HooksTest(unittest.TestCase):
         self.assertIsNotNone(self.suggest(prompt, conversation="conv-9")[1])
 
     def test_suggestions_can_be_switched_off_and_need_a_prompt(self):
-        self.assertEqual(self.suggest("are you able to help with grpc tracing?", env={"ALIS_SUGGEST_ALWAYS": "0"}), ("", None))
+        self.assertEqual(self.suggest("alis, help with grpc tracing?", env={"ALIS_SUGGEST_ALWAYS": "off"}), ("", None))
         self.assertEqual(self.suggest(""), ("", None))
         self.assertEqual(self.suggest("help with grpc tracing please", conversation="../../etc"), ("", None))
         self.bin.joinpath("alis").unlink()
-        payload = {"conversationId": "conv-4", "lastUserInput": "help with grpc tracing please"}
+        payload = {"conversationId": "conv-4", "lastUserInput": "alis help with grpc tracing please"}
         self.assertEqual(self.invoke("suggest-skills.sh", payload=payload), {})
 
     def test_bad_input_and_missing_jq_are_quiet(self):
-        for script in ("load-primer.sh", "inject-service-context.sh", "sync-skills.sh", "allow-alis-cli.sh", "suggest-skills.sh"):
+        for script in ("session-start.sh", "load-primer.sh", "inject-service-context.sh", "sync-skills.sh", "allow-alis-cli.sh", "suggest-skills.sh"):
             for raw in ("", "not json", "[]", "null"):
                 with self.subTest(script=script, raw=raw):
                     self.assertEqual(self.invoke(script, raw=raw), {})
         self.bin.joinpath("jq").unlink()
-        for script in ("load-primer.sh", "inject-service-context.sh", "sync-skills.sh", "allow-alis-cli.sh"):
+        for script in ("session-start.sh", "load-primer.sh", "inject-service-context.sh", "sync-skills.sh", "allow-alis-cli.sh"):
             self.assertEqual(self.invoke(script), {})
 
     def test_manifest_handlers_execute_from_plugin_root(self):
         config = json.loads(ROOT.joinpath("hooks.json").read_text())
         payload = {"invocationNum": 1, "workspacePaths": [str(self.workspace)]}
-        self.assertEqual([h["command"] for h in config["alis-context"]["PreInvocation"]][-1], "bash ./hooks/suggest-skills.sh")
-        self.assertNotIn("bash ./hooks/suggest-skills.sh", [h["command"] for h in config["alis-context"]["SessionStart"]])
+        self.assertEqual([h["command"] for h in config["alis-context"]["SessionStart"]], ["bash ./hooks/session-start.sh"])
+        self.assertEqual([h["command"] for h in config["alis-context"]["PreInvocation"]], ["bash ./hooks/suggest-skills.sh"])
+        self.assertEqual(config["alis-context"]["PreInvocation"][0]["timeout"], 2)
         for handler in config["alis-context"]["SessionStart"] + config["alis-context"]["PreInvocation"]:
             result = subprocess.run(handler["command"], shell=True, cwd=ROOT,
                                     input=json.dumps(payload), text=True, capture_output=True,

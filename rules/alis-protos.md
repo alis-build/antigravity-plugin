@@ -10,8 +10,9 @@ Applies to `.proto` files of an Alis Build service: those under
 - The contract is edited in the build environment's `define` repo, not in the
   build repo. Generated code in the build repo is never edited by hand.
 - A contract change is not live until Define runs. Commit and push, then
-  `alis define <pkg> --json --install --async`. Define pins the contract to that
-  exact pushed commit; unpushed edits are invisible to it.
+  `alis define <pkg> --json --install` (do not combine `--install` with
+  `--async`). Define pins the contract to that exact pushed commit; unpushed
+  edits are invisible to it.
 - After Define, update the service's packages with `alis packages` before
   writing code against the change. Types that look stale mean the packages need
   updating. Use the generated stubs and typed APIs, never proto reflection.
